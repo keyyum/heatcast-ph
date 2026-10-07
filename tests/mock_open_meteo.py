@@ -108,7 +108,7 @@ class MockOpenMeteo:
         wind = np.clip(8 + 5 * rng.random(len(idx)) + 2 * np.sin(2 * np.pi * (hour - 8) / 24), 0.5, None)
         gust = wind * (1.4 + 0.5 * rng.random(len(idx)))
         cell = {
-            "elevation": float(abs(hash((glat, glon))) % 800),
+            "elevation": 50.0,   # reference (grid-cell) elevation; per-request elevation adjusts temperature around it
             "values": {
                 "temperature_2m": temp, "relative_humidity_2m": rh, "dew_point_2m": dew,
                 "pressure_msl": pressure, "cloud_cover": cloud, "precipitation": rain, "rain": rain,
@@ -126,14 +126,22 @@ class MockOpenMeteo:
         times = pd.date_range(start, end, freq="h")
         lo = int((times[0] - SERIES_START) / pd.Timedelta(hours=1))
         cell = self._cell(glat, glon)
+        # synthetic stand-in for Open-Meteo's elevation adjustment: temperature shifts with the lapse rate relative
+        # to the cell reference elevation, dew point stays fixed and humidity follows (Magnus inverse).
+        elev = float(abs(hash((round(lat, 4), round(lon, 4)))) % 90 + 5)
+        sl = slice(lo, lo + len(times))
+        t_adj = cell["values"]["temperature_2m"][sl] - 0.0065 * (elev - cell["elevation"])
+        td = cell["values"]["dew_point_2m"][sl]
+        rh_adj = np.clip(100 * np.exp(17.27 * td / (237.7 + td) - 17.27 * t_adj / (237.7 + t_adj)), 0, 100)
+        adjusted = {"temperature_2m": t_adj, "relative_humidity_2m": rh_adj}
         hourly = {"time": [t.strftime("%Y-%m-%dT%H:%M") for t in times]}
         for v in q["hourly"][0].split(","):
             if v in self.null_vars:
                 hourly[v] = [None] * len(times)
             else:
-                hourly[v] = np.round(cell["values"][v][lo:lo + len(times)], 2).tolist()
+                hourly[v] = np.round(adjusted.get(v, cell["values"][v][sl]), 2).tolist()
         return {"latitude": glat, "longitude": glon, "generationtime_ms": 1.0, "utc_offset_seconds": 28800,
-                "timezone": "Asia/Manila", "timezone_abbreviation": "PST", "elevation": cell["elevation"],
+                "timezone": "Asia/Manila", "timezone_abbreviation": "PST", "elevation": elev,
                 "hourly_units": {k: HOURLY_UNITS[k] for k in ["time"] + q["hourly"][0].split(",")},
                 "hourly": hourly}
 

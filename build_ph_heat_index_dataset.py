@@ -1,21 +1,27 @@
 #!/usr/bin/env python3
 """
-Build a reproducible Philippine next-day heat-index ML dataset.
+HeatCast NCR: build the next-day maximum heat-index dataset for Metro Manila.
 
-Source   : Open-Meteo Historical Weather API (ERA5 reanalysis), hourly data
+Scope    : National Capital Region only - the 16 NCR cities of the PSA PSGC (the default;
+           ``--region all`` exists but is out of scope for this project)
+Source   : Open-Meteo Historical Weather API (ERA5 reanalysis, gridded), hourly data
 Period   : 2015-01-01 .. 2025-12-29, timezone Asia/Manila
-Locations: the 149 Philippine cities of the PSA PSGC (see build_city_list)
-Output   : one row per city-day with same-day weather aggregates, the NWS
-           heat index computed from hourly temperature + humidity, and the
-           next-day heat index / heat level as targets.
+Output   : one row per city-day with same-day weather aggregates, the NWS heat index
+           computed from hourly temperature + humidity, and the next-day heat index /
+           heat level as targets - plus a pre-modelling analysis report
+           (ncr_dataset_analysis.md) quantifying shared grid series, elevation effects,
+           class sufficiency, leakage risks and lag features.
+
+The 16 NCR cities resolve to only a few ERA5 grid cells. That is accepted by design: the
+data are gridded reanalysis estimates for representative city coordinates, not 16
+independent weather stations. The analysis report measures exactly how much is shared.
 
 Usage (terminal or Colab):
     python build_ph_heat_index_dataset.py --work-dir ph_cache --out-dir out
 
-The run is resumable: every completed (city, year) chunk is cached in
-``--work-dir`` and re-runs skip it. The free Open-Meteo tier allows
-10,000 weighted calls/day and this job costs ~42,700, so expect the first run
-to stop gracefully on the daily budget; simply re-run it the next day.
+The run is resumable: every completed (city, year) chunk is cached in ``--work-dir`` and
+re-runs skip it. NCR costs ~4,600 weighted API calls, i.e. one day on the free tier
+(10,000/day); a nationwide build (``--region all``) would cost ~42,700.
 
 Exit codes: 0 = dataset built and validated, 1 = error / validation failure,
 2 = incomplete (API budget reached or --max-cities subset not allowed to
@@ -1095,30 +1101,85 @@ def write_documentation(path: Path, ctx: dict) -> None:
     warn = "\n".join(f"- {w}" for w in ctx["report"]["warnings"]) or "- none"
     subset_note = ""
     selection_note = ", i.e. the full official city list of that release."
-    scope_note = ""
-    if ctx["region_filter"]:
-        regions = ", ".join(sorted(cities["region"].unique()))
-        selection_note = (f"; **restricted by request to {regions}** ({ctx['n_cities_total']} of the "
-                          f"{ctx['n_cities_all']} cities in that release).")
-        scope_note = (f"\n> **Scope: region filter `{'`, `'.join(ctx['region_filter'])}`** - {ctx['n_cities_total']} of "
-                      f"{ctx['n_cities_all']} Philippine cities ({regions}). This is not a nationwide dataset.\n")
+    nationwide = ctx["region_filter"] == ["all"]
+    if not nationwide:
+        selection_note = (f"; restricted to the project scope ({', '.join(sorted(cities['region'].unique()))}: "
+                          f"{ctx['n_cities_total']} of the {ctx['n_cities_all']} cities in that release).")
     if ctx["is_subset"]:
         selection_note = f"; a subset of the {ctx['n_cities_total']} selected cities."
     if ctx["is_subset"]:
         subset_note = ("\n> **NOTE: this is a SUBSET build** (`--max-cities` / `--allow-partial`): "
                        f"{c['n_cities']} of {ctx['n_cities_total']} cities.\n")
-    md = f"""# Philippine Next-Day Heat-Index Dataset
+    a = ctx.get("analysis")
+    regions_txt = ", ".join(sorted(cities["region"].unique()))
+    n_cities_all, n_total_sel = ctx["n_cities_all"], ctx["n_cities_total"]
+    if nationwide:
+        scope_note = (f"\n> **Scope: all regions ({n_total_sel} cities) - outside the HeatCast NCR project scope**, built because "
+                      "`--region all` was passed explicitly.\n")
+    else:
+        scope_note = (f"\n> **Scope: {regions_txt} only** - {n_total_sel} of the {n_cities_all} Philippine PSGC cities. "
+                      "This is not a nationwide dataset and is not meant to be extended automatically.\n")
+    if a:
+        g, lk = a["grid"], a["leakage"]
+        cell_rows = "\n".join(f"| {k} | {int(v['n_cities'])} | {v['cities']} |" for k, v in g["cells"].iterrows())
+        ident = g["identical_by_column"]
+        ident_txt = (f"{ident.min():.1%}-{ident.max():.1%} of days depending on the column" if len(ident) else "n/a (no shared cells)")
+        elev_detail = (f"Between cities in the same cell the mean |difference| of the daily maximum heat index is "
+                       f"{g['same_cell_mean_abs_dHI']:.2f} °C and their heat level differs on {g['same_cell_class_disagree_today']:.2%} of days "
+                       "(heuristic thresholds in the analysis report)." if g["n_pairs_same_cell"] else
+                       "No two cities share a grid cell, so the adjustment cannot be assessed from within-cell differences.")
+        grid_section = f"""## Shared grid series - read before modelling
+
+**These are gridded ERA5 reanalysis estimates for representative city coordinates (population-weighted city centres).
+They are not station observations, and the {g['n_cities']} cities are not {g['n_cities']} independent weather stations.**
+Nearby coordinates fall into the same ~25 km ERA5 cell and receive the same underlying meteorological data. This is
+accepted by design (NCR-only scope); it is measured here, not hidden. Full numbers: `ncr_dataset_analysis.md`.
+
+| Grid cell (API centre) | Cities | Names |
+|---|---|---|
+{cell_rows}
+
+- **Distinct ERA5 grid cells: {g['n_grid_cells']}** for {g['n_cities']} cities. Cities in one cell report identical pressure,
+  cloud, wind, rain and solar values on {ident_txt}.
+- **Effective number of independent series: ~{g['effective_series']:.2f}** (participation ratio of deseasonalised daily
+  heat-index anomalies; {g['components_for_95pct']} principal component(s) reach 95 % of the variance).
+- **Elevation adjustment: {g['elevation_effect']}.** API elevations span {g['elev_min_m']:.0f}-{g['elev_max_m']:.0f} m. {elev_detail}
+- **Sample size:** {lk['n_rows']:,} city-day rows represent only {lk['n_cell_days']:,} (grid cell, day) combinations. Row-level
+  counts and standard errors overstate the information content.
+- **Leakage:** random row splits or leave-one-city-out would give {lk['random_split_test_rows_with_same_cell_date_train_row']:.0%} /
+  {lk['leave_one_city_out_rows_with_same_cell_mate_in_train']:.0%} of test rows a same-day same-cell twin in training;
+  a chronological split by `Date` gives {lk['chron_test_rows_with_same_date_train_row']:.0%}. This CSV is sorted City-then-Date, so
+  "first 80 % of rows" is **not** a chronological split.
+"""
+        limitation_shared = (f"- **Few independent locations (by design).** NCR's {g['n_cities']} cities resolve to {g['n_grid_cells']} ERA5 grid "
+                             f"cell(s), roughly {g['effective_series']:.1f} effective independent series. Do not describe them as independent "
+                             "stations; split by date, treat City/Latitude/Longitude/Elevation as identifiers, and take uncertainty from "
+                             "date blocks (see `ncr_dataset_analysis.md`).")
+    else:
+        grid_section = ("## Shared grid series - read before modelling\n\n**These are gridded ERA5 reanalysis estimates for "
+                        "representative city coordinates, not independent weather stations.** Several NCR cities share one ERA5 grid cell. "
+                        "The quantitative analysis was not available for this build; run `ncr_dataset_analysis.py`.\n")
+        limitation_shared = ("- **Few independent locations (by design).** Several NCR cities share ERA5 grid cells; they are not independent "
+                             "stations. Split by date and treat City/Latitude/Longitude/Elevation as identifiers.")
+    n_days_quota = max(1, math.ceil(ctx["total_weight"] / ctx["day_budget"]))
+    md = f"""# HeatCast NCR - Next-Day Maximum Heat-Index Dataset (Metro Manila)
+
+Project: *HeatCast NCR: Next-Day Maximum Heat Index Risk Classification in Metro Manila Using Traditional Machine Learning.*
 
 Generated {ctx['generated_at']} by `build_ph_heat_index_dataset.py` v{SCRIPT_VERSION}
 (Python {ctx['py']}, pandas {pd.__version__}, numpy {np.__version__}).
 {scope_note}{subset_note}
 ## What this is
 
-One row per city-day for **{c['n_cities']} Philippine cities**, {c['date_min']} to {c['date_max']}
+One row per city-day for **{c['n_cities']} NCR cities**, {c['date_min']} to {c['date_max']}
 ({c['shape'][0]:,} rows x {c['shape'][1]} columns). Inputs are same-day weather aggregates; the
-targets are the **next day's** maximum heat index (numeric) and its heat level (class).
-Files: `ph_heat_index_next_day.csv`, `ph_heat_index_data_dictionary.csv`, `ph_heat_index_city_list.csv`.
+targets are the **next day's** maximum hourly heat index (numeric) and its heat level (class).
+**The ML task is classification of `HeatLevelTomorrow`** (five ordered classes); `HeatIndex_Max_Tomorrow` is kept as the
+exact numeric value behind the label and must never be used as an input.
+Files: `ph_heat_index_next_day.csv`, `ph_heat_index_data_dictionary.csv`, `ph_heat_index_city_list.csv`,
+`dataset_documentation.md`, `ncr_dataset_analysis.md` (pre-modelling analysis).
 
+{grid_section}
 ## Data source
 
 - **Open-Meteo Historical Weather API** (<https://open-meteo.com/en/docs/historical-weather-api>), reanalysis data.
@@ -1136,7 +1197,7 @@ Files: `ph_heat_index_next_day.csv`, `ph_heat_index_data_dictionary.csv`, `ph_he
 > **ERA5 is gridded reanalysis data, not PAGASA station observations.** Each value is a model estimate for a
 > ~25 km grid cell, adjusted by Open-Meteo for the elevation difference between the cell and the requested point
 > (90 m elevation model; see the Open-Meteo documentation). Heat-index values here are
-> **not** PAGASA-reported station heat indices and can differ from them, especially in coastal or mountain cities.
+> **not** PAGASA-reported station heat indices and can differ from them.
 
 ## City list
 
@@ -1151,10 +1212,10 @@ Files: `ph_heat_index_next_day.csv`, `ph_heat_index_data_dictionary.csv`, `ph_he
   `fallback_unverified` are excluded. This approximates the populated area; the package's own area-weighted
   city centroid can lie far from the urban core (up to {ctx['max_shift_km']:.0f} km here, see `shift_vs_area_centroid_km`).
 - **Elevation:** taken from the Open-Meteo response for the requested coordinates (the PSGC data has no elevation).
-- **Grid cells:** the {len(cities)} cities map to **{n_cells} distinct ERA5 grid cells** (`grid_latitude`/`grid_longitude`
-  in the city list). Cities sharing a cell receive nearly identical weather; only the elevation downscaling differs.
-- **City keys:** PSGC name without "City of"/"City"; four names occur twice (Naga, San Carlos, San Fernando, Talisay)
-  and are written `Name (Province)`. Official names and PSGC codes are in the city list.
+- **Grid cells:** the {len(cities)} cities map to **{n_cells} distinct ERA5 grid cell(s)** (`grid_latitude`/`grid_longitude`
+  in the city list; see "Shared grid series" above). Cities sharing a cell receive the same underlying data.
+- **City keys:** PSGC name without "City of"/"City" (a name that occurs twice nationwide would be written
+  `Name (Province)`; none do within NCR). Official names and PSGC codes are in the city list.
 
 ## Collection method
 
@@ -1193,7 +1254,7 @@ The implementation was cross-checked against MetPy's `heat_index` (`tests/test_p
 the two are identical (to 1e-6 °C) except where air temperature is roughly 25-27 °C, because the NWS WPC text and
 MetPy switch from the simple formula to the regression at slightly different points; there the difference reaches
 about 1.25 °C (around the 27 °C class boundary). It only matters on cool days whose maximum temperature stays below
-~27 °C (e.g. upland cities in the cool season).
+~27 °C (e.g. heavy-rain or typhoon days), which are rare in Metro Manila.
 
 ## Aggregation method
 
@@ -1264,21 +1325,19 @@ boundaries; the exact numeric target is therefore kept.
 ## Known limitations
 
 - **Reanalysis, not observations.** ~25 km grid cells; no station data. Reanalysis humidity and temperature can be
-  biased versus PAGASA stations, so absolute heat-index levels may be off, particularly for coastal and mountain cities.
+  biased versus PAGASA stations, so absolute heat-index levels may be off, particularly for the coastal cities.
 - **Hourly instantaneous values.** The daily heat-index maximum is the maximum of 24 hourly values; the true
   sub-hourly peak and PAGASA's station-based reporting practice may differ.
 - **Heat-index formula range.** The NWS regression is fitted for shade, light wind, T >= 80 °F and RH >= 40 %; it is
   an approximation outside that range and does not account for direct sun or wind. It is not a physiological model.
-- **Few independent locations.** {len(cities)} cities share {n_cells} grid cells, so cities are strongly correlated
-  in space. Use time-based splits and group by grid cell/region; random row splits leak information between
-  neighbouring cities and consecutive days.
+{limitation_shared}
 - **Temporal dependence.** Consecutive days are strongly autocorrelated; use chronological validation.
 - **City coordinates are model inputs, not city-hall points.** Population-weighted centers can fall outside
   built-up areas for dispersed or multi-centre cities, and `cell_selection=land` may move to a neighbouring cell.
 - **City definition.** The list is the PSGC Q1 2026 city set, including cities converted from municipalities after
   2015; the weather series is physical and unaffected, but "city" status was not constant over 2015-2025.
-- **Class balance is determined by climate**, not by design; see the distribution above. Rare classes
-  (Extreme Danger, Not Hazardous) may have few rows.
+- **Class balance is determined by climate**, not by design; see the distribution above and the class-sufficiency
+  flags in `ncr_dataset_analysis.md` (rare classes are flagged there; none are merged or dropped automatically).
 - **Revisions.** ERA5 is occasionally corrected upstream (ERA5T to ERA5); a re-download later may differ slightly.
   The chunk cache pins the data actually used.
 - **Rain definition.** `RainHours` uses a 0.1 mm/h threshold, a modelling choice.
@@ -1292,8 +1351,9 @@ pip install requests pandas numpy tqdm
 python build_ph_heat_index_dataset.py --work-dir ph_cache --out-dir out   # re-run until it finishes
 ```
 
-The free tier needs several days of runs (budget {DEFAULT_BUDGETS['day']:,.0f} weighted calls/day); cached chunks are
-reused. In Google Colab use `ph_heat_index_colab.ipynb` with Google Drive as the cache location.
+This build needs about {n_days_quota} free-tier day(s) of API budget ({ctx['total_weight']:,.0f} weighted calls; client budget
+{ctx['day_budget']:,.0f}/day); cached chunks are reused. In Google Colab use `ph_heat_index_colab.ipynb` with Google Drive as the
+cache location. The pre-modelling analysis is regenerated with `python ncr_dataset_analysis.py --dataset ... --city-list ...`.
 """
     atomic_write_text(path, md)
 
@@ -1311,8 +1371,8 @@ def parse_args(argv=None) -> argparse.Namespace:
     p.add_argument("--api-url", default=None, help="override endpoint (testing)")
     p.add_argument("--api-key", default=os.environ.get("OPEN_METEO_API_KEY"), help="commercial key -> customer endpoint, no client budgets")
     p.add_argument("--region", action="append", metavar="NAME",
-                   help="only cities in matching PSGC regions, e.g. --region NCR (case-insensitive substring; "
-                        "comma-separated or repeatable; default: all regions)")
+                   help="PSGC regions to include (case-insensitive substring; comma-separated or repeatable). "
+                        "Default: NCR, the project scope. 'all' selects every region (out of scope for HeatCast NCR)")
     p.add_argument("--max-cities", type=int, default=None, help="only the first N cities (smoke test); implies --allow-partial")
     p.add_argument("--allow-partial", action="store_true", help="write outputs from cities whose chunks are all complete")
     p.add_argument("--no-keep-raw", dest="keep_raw", action="store_false",
@@ -1355,14 +1415,16 @@ def main(argv=None) -> int:
         cities = build_city_list(work_dir, log)
         atomic_write_csv(cities, base_path)
     n_all = len(cities)
-    if args.region:
+    args.region = args.region or ["NCR"]
+    if any(x.strip().lower() == "all" for r in args.region for x in r.split(",")):
+        args.region = ["all"]
+    else:
         try:
             cities = filter_regions(cities, args.region)
         except ValueError as exc:
             log(f"FATAL: {exc}")
             return 1
-        log(f"Region filter {args.region}: {len(cities)} of {n_all} PSGC cities "
-            f"({', '.join(sorted(cities['region'].unique()))})")
+    log(f"Scope {args.region}: {len(cities)} of {n_all} PSGC cities ({', '.join(sorted(cities['region'].unique()))})")
     n_total = len(cities)  # the intended universe (all cities, or the chosen regions)
     if args.max_cities:
         cities = cities.head(args.max_cities).reset_index(drop=True)
@@ -1477,6 +1539,21 @@ def main(argv=None) -> int:
     atomic_write_csv(city_out, city_path)
     dict_path = out_dir / "ph_heat_index_data_dictionary.csv"
     atomic_write_csv(build_data_dictionary(reread), dict_path)
+    analysis, analysis_error = None, None
+    try:
+        import ncr_dataset_analysis as NA  # sits next to this script
+        log("Running the pre-modelling analysis (no model is trained)...")
+        analysis = NA.run_analysis(reread, city_out)
+        atomic_write_text(out_dir / "ncr_dataset_analysis.md", NA.render_markdown(analysis))
+        log("\nANALYSIS KEY FINDINGS")
+        for line in NA.key_findings(analysis):
+            log(f"  - {line}")
+    except ImportError as exc:
+        log(f"WARNING: analysis skipped ({exc}); keep ncr_dataset_analysis.py and ncr_modeling_utils.py next to this script.")
+    except Exception as exc:  # the dataset is already valid; surface the failure loudly instead of hiding it
+        import traceback
+        analysis_error = f"{type(exc).__name__}: {exc}"
+        log("ERROR: the dataset was written but the analysis failed:\n" + traceback.format_exc())
     chunk_files = [chunk_path(work_dir, key, c) for c in chunks if c.city_id in set(cities["city_id"])]
     mtimes = [dt.datetime.fromtimestamp(p.stat().st_mtime, dt.timezone.utc) for p in chunk_files if p.exists()]
     ctx = {
@@ -1485,14 +1562,16 @@ def main(argv=None) -> int:
         "generated_at": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
         "py": sys.version.split()[0], "api_url": API_URL, "model": args.model, "start": args.start, "end": args.end,
         "fetched_between": f"{min(mtimes):%Y-%m-%d} and {max(mtimes):%Y-%m-%d}" if mtimes else "n/a",
-        "max_shift_km": float(city_out["shift_vs_area_centroid_km"].max()),
+        "max_shift_km": float(city_out["shift_vs_area_centroid_km"].max()), "analysis": analysis,
+        "day_budget": args.day_budget or DEFAULT_BUDGETS["day"],
         "total_weight": sum(call_weight(c.n_days) for c in chunks),
     }
     doc_path = out_dir / "dataset_documentation.md"
     write_documentation(doc_path, ctx)
 
     log("\n" + "=" * 78 + "\nOUTPUT FILES\n" + "=" * 78)
-    for p in (ds_path, dict_path, city_path, doc_path):
+    report_path = out_dir / "ncr_dataset_analysis.md"
+    for p in (ds_path, dict_path, city_path, doc_path, *([report_path] if analysis else [])):
         log(f"  {p}  ({p.stat().st_size / 1e6:,.2f} MB)")
     c = report["checks"]
     log(f"\nVALIDATION: {'PASSED' if not report['errors'] else 'FAILED'} | {c['shape'][0]:,} rows, {c['n_cities']} cities, "
@@ -1501,6 +1580,8 @@ def main(argv=None) -> int:
         f"tomorrow==next-day-today mismatches={c['tomorrow_equals_next_day_today']['mismatches_shift']}")
     if is_subset:
         log(f"NOTE: SUBSET build ({len(cities)} of {n_total} cities) - not the full dataset.")
+    if analysis_error:
+        return 1
     if status != "complete":
         log("NOTE: the API budget stopped this run before every requested chunk was fetched; re-run to continue.")
         return 2

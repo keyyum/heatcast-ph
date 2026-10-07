@@ -1,90 +1,113 @@
-# heatcast-ph — Philippine next-day heat-index dataset
+# HeatCast NCR
 
-Builds `ph_heat_index_next_day.csv`: one row per **city-day** for the **149 Philippine cities**,
-2015-01-01 → 2025-12-29 (Asia/Manila), from the **Open-Meteo Historical Weather API (ERA5 reanalysis)**.
-Inputs are same-day weather aggregates; targets are the **next day's maximum heat index** (°C, exact) and its
-**heat level** (Not Hazardous / Caution / Extreme Caution / Danger / Extreme Danger). No model is trained here.
+**Next-Day Maximum Heat Index Risk Classification in Metro Manila Using Traditional Machine Learning**
 
-> **Status:** the pipeline is implemented and tested against a local mock of the Open-Meteo API
-> (52 tests, including full-scale 149-city runs on synthetic data). **The real dataset has not been
-> collected yet** — the environment this was written in blocks `open-meteo.com`. Run it where the API is
-> reachable (Google Colab: `ph_heat_index_colab.ipynb`). Nothing in this repo is real weather data.
+This repository builds and checks the dataset for that project. **Scope is NCR / Metro Manila only** (the 16 NCR cities
+of the PSA PSGC list) and is not meant to be extended automatically. The ML task is **classification** of
+`HeatLevelTomorrow`; Logistic Regression, Random Forest and Gradient Boosting are planned, with Macro F1 as the
+likely primary metric. **No model is trained here.**
+
+> **Status:** the pipeline and the pre-modelling analysis are implemented and tested (94 tests) against a local mock of
+> the Open-Meteo API. **The real NCR dataset has not been built yet**: the environment this was developed in blocks
+> `open-meteo.com`, so no real class counts or grid-series measurements exist yet. Run it where the API is reachable
+> (Google Colab: `ph_heat_index_colab.ipynb`); one run costs ~4,600 weighted API calls = one day of the free tier.
+> Nothing in this repository is real weather data.
+
+## What the data are (and are not)
+
+Gridded **ERA5 reanalysis estimates** from the Open-Meteo Historical Weather API, taken at one representative coordinate per
+city (the population-weighted centre of its barangays). They are **not station observations and not 16 independent weather
+stations**: Metro Manila's 16 coordinates fall into only about two ~25 km ERA5 grid cells, so nearby cities share the same
+underlying meteorology. That is accepted by design. The build **measures** it instead of ignoring it (see
+`ncr_dataset_analysis.md`).
+
+The 16 cities: Caloocan, Las Piñas, Makati, Malabon, Mandaluyong, Manila, Marikina, Muntinlupa, Navotas, Parañaque, Pasay,
+Pasig, Quezon City, San Juan, Taguig, Valenzuela (Pateros is a municipality, not a city, and is not in the PSGC city list).
 
 ## Run it
 
 ```bash
 pip install -r requirements.txt
-python build_ph_heat_index_dataset.py --work-dir ph_heat_index_cache --out-dir out
+python build_ph_heat_index_dataset.py --work-dir ph_heat_index_cache --out-dir out     # NCR is the default scope
 ```
 
-or open `ph_heat_index_colab.ipynb` in Colab (cache + outputs on Google Drive).
+or open `ph_heat_index_colab.ipynb` in Colab (cache + outputs on Google Drive). Re-running resumes from the cache. In an
+environment with an outbound allow-list, allow `archive-api.open-meteo.com`, `pypi.org` and `files.pythonhosted.org`.
 
-**Expect several runs.** A whole-year request for 10 hourly variables counts as ~26 weighted calls on Open-Meteo's
-free tier (10,000/day; formula from their pricing page). The full job is ≈ **42,700 calls ≈ 5 daily runs**. Each
-finished city-year is cached; re-run the same command and it resumes, stopping cleanly (exit code 2) when the daily
-budget is used up. A client-side budget (500/min, 4,500/h, 9,500/day, persisted in `api_usage_log.json`) keeps you
-under the server limits; delete that file if you know the server quota has reset. With a commercial key
-(`OPEN_METEO_API_KEY` or `--api-key`) the customer endpoint is used and no client budget applies.
+Useful flags: `--max-cities 3` (smoke test, labelled SUBSET), `--validate-only FILE.csv`, `--no-keep-raw`, `--model`
+(default `era5`), `--region` (default `NCR`; `all` exists but is outside this project's scope). `--help` lists the rest.
 
-**NCR only?** Add `--region NCR` (also matches `Metro Manila`; any PSGC region name or fragment works, comma-separated
-or repeated). That is 16 cities ≈ 4,600 weighted calls, i.e. **one day** on the free tier instead of five, and the
-generated documentation states the regional scope. Caveat: Metro Manila's 16 cities fall into only about **2 ERA5
-grid cells**, so you get roughly two distinct weather series, not sixteen (they differ mainly by elevation
-adjustment). The cache is keyed per city, so a regional run reuses chunks from a full run and vice versa.
-
-Useful flags: `--max-cities 3` (smoke test, clearly labelled SUBSET output), `--allow-partial`,
-`--validate-only FILE.csv`, `--model` (default `era5`), `--no-keep-raw`. `--help` lists the rest.
-
-**Raw responses are kept** (gzip, `raw/` inside `--work-dir`, roughly 150–250 MB for the full run) so that if the
-aggregation or heat-index step ever has to change, the dataset is rebuilt offline in seconds instead of re-spending
-~5 days of API quota. Bump `AGG_VERSION` after such a change; chunks are then re-aggregated from raw automatically.
-
-## Outputs (written to `--out-dir`)
+### Outputs (written to `--out-dir`)
 
 | File | Content |
 |---|---|
-| `ph_heat_index_next_day.csv` | the dataset (~105 MB; git-ignored: over GitHub's 100 MB limit) |
+| `ph_heat_index_next_day.csv` | the dataset (26 columns, sorted by City, Date; ~64,000 rows = 16 cities × 4,015 days) |
 | `ph_heat_index_data_dictionary.csv` | column, dtype, role, unit, description, derivation |
-| `ph_heat_index_city_list.csv` | cities used, coordinates, API elevation, ERA5 grid cell, provenance |
+| `ph_heat_index_city_list.csv` | the 16 cities, coordinates, API elevation, ERA5 grid cell, provenance |
 | `dataset_documentation.md` | source, endpoint, method, formula, categories, limitations, validation of *that* build |
+| `ncr_dataset_analysis.md` | **pre-modelling analysis** (below), computed from the real data |
 
-Before burning API quota you can inspect the city list that will be used: `reference/ph_city_list_base.csv`
-(real; rebuilt from the pinned source by the script, checked by a test). Elevation is added from the API at run time.
+## The pre-modelling analysis (`ncr_dataset_analysis.md`)
 
-## Key decisions (details in the generated documentation)
+Generated automatically after the dataset passes validation; also runnable alone
+(`python ncr_dataset_analysis.py --dataset ... --city-list ...`). Model-free: counting, correlation and rule-based baselines.
 
-- **City list:** 149 PSGC cities (33 HUC, 111 component, 5 independent component) from the pinned, SHA-256-verified
-  `psgc==2026.4.13.0` PyPI wheel (community package of the PSA PSGC Q1 2026; not an official PSA product).
-  Coordinates are the **population-weighted mean of barangay centroids**, not the package's area-weighted centroid,
-  which sits up to 28 km from the urban core in big cities. Duplicate names get a province suffix (e.g. `Naga (Cebu)`).
-- **Model pinned to `era5`.** Open-Meteo's default `best_match` blends in ECMWF IFS from 2017, a model change inside
-  the period. A one-request preflight checks that all 10 variables actually come back.
-- **Heat index:** NWS/Rothfusz procedure on hourly T and RH (°F internally, °C stored), not `apparent_temperature`.
-- **Classes:** the thresholds leave gaps for fractional values, so each class's lower bound is inclusive
-  (`27 ≤ HI < 33` = Caution, …) on the stored 2-decimal value.
-- **Targets:** shifted by calendar date within city; each city's last row dropped; values rounded *before* shifting so
-  tomorrow's target equals the next day's feature exactly.
-- **Not PAGASA observations.** ERA5 is ~25 km gridded reanalysis; labels are bins of the numeric heat index.
+1. **Grid series:** how many distinct ERA5 cells / non-thermal series / effective independent series (PCA participation ratio).
+2. **Elevation adjustment:** within-cell lapse-rate slopes, heat-index differences between cities in one cell, how often
+   they land in different classes, and a heuristic *negligible / modest / material* verdict.
+3. **Class counts and percentages** for `HeatLevelTomorrow`, per year, plus distinct days and heat *episodes*.
+4. **Danger and Extreme Danger** detail, and a **sufficiency flag per class** (FEW / VERY FEW / ABSENT / ABSENT IN TRAIN) on the
+   whole data, the proposed chronological split and every CV fold. **Nothing is merged or dropped automatically.**
+5. **Shared-series leakage:** how many test rows would have a same-day, same-cell twin in training under a random split,
+   leave-one-city-out, or a chronological split; city/date variance shares; why static features are identifiers.
+6. **1–3 day lag features** (past only): correlation and partial correlation with tomorrow's heat index beyond today's value
+   and season, plus the autocorrelation structure.
+7. **Reference baselines** (persistence, majority class, monthly climatology) on the proposed test period, with Macro F1.
+8. **Recommendations** that keep NCR as the scope.
+
+## Using the data safely (`ncr_modeling_utils.py`)
+
+* **Split by `Date`, never by row.** The CSV is sorted City-then-Date, so `train_test_split(shuffle=False)` or
+  `TimeSeriesSplit` on the raw frame splits by *city*. Use `chronological_split(df, test_start, embargo_days)` and
+  `expanding_window_folds(df, n_splits, gap_days)`; every date, with all its cities, stays on one side.
+* `add_lag_features(df)` builds 1–3 day lags, 3-day means and a pressure change, calendar-aware and strictly past-only
+  (tested by scrambling the future and checking nothing in the past changes).
+* `INPUT_FEATURES` is the specified 22-column feature list; `assert_no_future_information(cols)` rejects
+  `HeatIndex_Max_Tomorrow`, `HeatLevelTomorrow` and anything that looks like tomorrow.
+
+## Key decisions
+
+- **Class rule:** `HeatIndex_Max_Tomorrow` is the next day's maximum *hourly* heat index (NWS/Rothfusz on hourly temperature and
+  humidity). The thresholds leave gaps for fractional values, so each class's lower bound is inclusive:
+  `<27` Not Hazardous, `27–<33` Caution, `33–<42` Extreme Caution, `42–<52` Danger, `>=52` Extreme Danger.
+- **Model pinned to `era5`.** Open-Meteo's default `best_match` blends in ECMWF IFS from 2017, a model change inside the period.
+  A one-request preflight verifies all 10 variables come back (the docs are ambiguous about ERA5 wind gusts).
+- **City list:** 149 PSGC cities from a pinned, SHA-256-verified `psgc==2026.4.13.0` PyPI wheel, filtered to NCR. Coordinates are
+  population-weighted barangay centres (the package's area centroids can sit far from the urban core).
+- **Raw responses are kept** (gzip, `raw/` in the work dir, a few tens of MB for NCR) so an aggregation fix never needs the API again.
+- **Resumable and rate-limit aware:** per city-year cache, persisted call budget, graceful stop on the daily limit.
 
 ## Tests
 
 ```bash
-python -m unittest discover -s tests -v      # ~15 s, offline except two PyPI-based city-list tests (skipped if unreachable)
-pip install metpy                             # optional: enables the heat-index cross-check vs MetPy
+python -m unittest discover -s tests -v      # ~35 s; two tests need PyPI (skipped if unreachable)
+pip install metpy                             # optional: heat-index cross-check against MetPy
 ```
 
-`tests/mock_open_meteo.py` serves **synthetic** data with fault injection (500/503, 429 minutely/hourly/daily,
-truncated JSON, short arrays, wrong timezone, bad request, daily weighted quota).
+`tests/mock_open_meteo.py` serves **synthetic** data with fault injection (500/503, 429 minutely/hourly/daily, truncated JSON,
+short arrays, wrong timezone, quota) and a lapse-rate elevation effect. The analysis is tested against panels with
+**planted** structure (known grid cells, a −0.65 °C/100 m lapse effect, AR(2) dynamics, known class counts).
 
 ## Layout
 
 ```
-build_ph_heat_index_dataset.py   the whole pipeline (single file, runs unchanged in Colab)
-ph_heat_index_colab.ipynb        thin Colab runner (Drive-backed cache)
-reference/ph_city_list_base.csv  city list before API enrichment
+build_ph_heat_index_dataset.py   dataset pipeline (fetch, cache, aggregate, targets, validate, documentation)
+ncr_dataset_analysis.py          pre-modelling analysis (no models trained)
+ncr_modeling_utils.py            date-based splits, past-only lag features, future-information guard
+ph_heat_index_colab.ipynb        Colab runner (Drive-backed cache)
+reference/ph_city_list_base.csv  the 149-city PSGC list before the NCR filter and API enrichment
 tests/                           unit + end-to-end tests and the mock API
 ```
 
-Data attribution: weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0, non-commercial on the free
-tier), containing modified Copernicus Climate Change Service (ERA5) information; barangay boundaries OCHA/HDX (CC BY-IGO)
-via `psgc` (MIT).
+Data attribution: weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0, non-commercial on the free tier),
+containing modified Copernicus Climate Change Service (ERA5) information; barangay boundaries OCHA/HDX (CC BY-IGO) via `psgc` (MIT).

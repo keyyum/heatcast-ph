@@ -389,7 +389,7 @@ def seed_city_list(work: Path, n: int = 4, regions: list[str] | None = None) -> 
     for i in range(n):
         lat, lon = coords[i % len(coords)]
         rows.append({"city_id": f"99{i:08d}", "City": f"TestCity{i}", "psgc_name": f"City of TestCity{i}",
-                     "province_or_group": "Testprov", "region": (regions or ["Test Region"])[i % len(regions or [1])],
+                     "province_or_group": "Testprov", "region": (regions or ["National Capital Region (NCR)"])[i % len(regions or [1])],
                      "city_class": "Component City",
                      "population_2024": 100000 + i, "latitude": lat + 0.01 * i, "longitude": lon + 0.01 * i,
                      "coord_method": "population_weighted_barangay_centroids", "n_barangays": 10,
@@ -491,10 +491,22 @@ class PipelineTests(unittest.TestCase):
         cl = pd.read_csv(self.out / "ph_heat_index_city_list.csv")
         self.assertEqual(set(cl["region"]), {"National Capital Region (NCR)"})
         doc = (self.out / "dataset_documentation.md").read_text(encoding="utf-8")
-        self.assertIn("Scope: region filter", doc)
-        self.assertIn("2 of the 4 cities", doc)
+        self.assertIn("Scope: National Capital Region (NCR) only", doc)
+        self.assertIn("2 of the 4", doc)
         self.assertNotIn("SUBSET build", doc)                  # an intentional region scope is not a partial build
         self.assertNotIn("full official city list", doc)
+
+    def test_default_scope_is_ncr_and_all_is_explicit(self):
+        seed_city_list(self.work, 4, regions=self.REGIONS)
+        with MockOpenMeteo() as mock:
+            self.assertEqual(self.run_main(mock), 0)                                  # no --region given
+        self.assertEqual(sorted(pd.read_csv(self.out / "ph_heat_index_next_day.csv")["City"].unique()),
+                         ["TestCity0", "TestCity2"])
+        with MockOpenMeteo() as mock2:
+            self.assertEqual(self.run_main(mock2, "--region", "all"), 0)
+        self.assertEqual(pd.read_csv(self.out / "ph_heat_index_next_day.csv")["City"].nunique(), 4)
+        doc = (self.out / "dataset_documentation.md").read_text(encoding="utf-8")
+        self.assertIn("outside the HeatCast NCR project scope", doc)
 
     def test_region_alias_and_multiple_regions(self):
         cities = seed_city_list(self.work, 4, regions=self.REGIONS)
@@ -517,7 +529,7 @@ class PipelineTests(unittest.TestCase):
     def test_region_run_reuses_cache_from_a_full_run(self):
         seed_city_list(self.work, 4, regions=self.REGIONS)
         with MockOpenMeteo() as mock:
-            self.assertEqual(self.run_main(mock, "--max-cities", "4"), 0)
+            self.assertEqual(self.run_main(mock, "--region", "all", "--max-cities", "4"), 0)
         with MockOpenMeteo() as mock2:
             self.assertEqual(self.run_main(mock2, "--region", "NCR"), 0)
             self.assertEqual(mock2.requests, [])
@@ -530,6 +542,53 @@ class PipelineTests(unittest.TestCase):
         doc = (self.out / "dataset_documentation.md").read_text(encoding="utf-8")
         self.assertIn("SUBSET build", doc)
         self.assertIn("1 of 2 cities", doc)
+
+    def test_analysis_report_is_written_and_documented(self):
+        seed_city_list(self.work, 4)
+        with MockOpenMeteo() as mock:
+            self.assertEqual(self.run_main(mock), 0)
+        report = (self.out / "ncr_dataset_analysis.md").read_text(encoding="utf-8")
+        for heading in ("## Key findings", "## 1. How many distinct grid series", "## 3. Class counts",
+                        "## 5. Shared grid series and leakage", "## 8. Recommendations"):
+            self.assertIn(heading, report)
+        self.assertIn("No model has been trained", report)
+        doc = (self.out / "dataset_documentation.md").read_text(encoding="utf-8")
+        self.assertIn("## Shared grid series - read before modelling", doc)
+        self.assertIn("not 4 independent weather stations", doc)
+        self.assertIn("gridded ERA5 reanalysis estimates for representative city coordinates", doc)
+        self.assertIn("HeatCast NCR", doc)
+
+    def test_analysis_failure_is_loud_but_keeps_the_dataset(self):
+        import ncr_dataset_analysis as NA
+        seed_city_list(self.work, 2)
+        orig = NA.run_analysis
+        NA.run_analysis = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom"))
+        try:
+            with MockOpenMeteo() as mock:
+                rc = self.run_main(mock)
+        finally:
+            NA.run_analysis = orig
+        self.assertEqual(rc, 1)
+        self.assertTrue((self.out / "ph_heat_index_next_day.csv").exists())           # valid dataset is not discarded
+        self.assertIn("the analysis failed", (self.work / "run_log.txt").read_text(encoding="utf-8"))
+
+    def test_very_short_range_does_not_break_the_analysis(self):
+        seed_city_list(self.work, 2)
+        with MockOpenMeteo() as mock:
+            rc = self.run_main(mock, start="2018-03-01", end="2018-03-20")
+        self.assertEqual(rc, 0)                                   # 19 days, no lag rows, absent classes: must still report
+        report = (self.out / "ncr_dataset_analysis.md").read_text(encoding="utf-8")
+        self.assertIn("## Key findings", report)
+        self.assertIn("ABSENT", report)                           # absent classes are flagged, not hidden
+        self.assertNotIn("2,018", report)                         # labels such as years are not formatted as quantities
+
+    def test_real_ncr_city_list_has_the_16_psgc_cities(self):
+        ref = pd.read_csv(ROOT / "reference" / "ph_city_list_base.csv")
+        ncr = ref[ref["region"].str.contains("NCR")]
+        self.assertEqual(sorted(ncr["City"]), sorted([
+            "Caloocan", "Las Piñas", "Makati", "Malabon", "Mandaluyong", "Manila", "Marikina", "Muntinlupa", "Navotas",
+            "Parañaque", "Pasay", "Pasig", "Quezon", "San Juan", "Taguig", "Valenzuela"]))
+        self.assertEqual(len(m.filter_regions(ref, ["NCR"])), 16)                     # Pateros is a municipality, not a city
 
     def test_no_keep_raw_flag(self):
         seed_city_list(self.work, 1)
