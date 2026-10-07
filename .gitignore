@@ -6,8 +6,13 @@ __pycache__/
 ph_heat_index_cache/
 *.tmp
 
-# Generated outputs. The dataset CSV is ~105 MB, over GitHub's 100 MB file limit; keep it out of git
-# (store on Drive / release assets / Git LFS instead).
-ph_heat_index_next_day.csv
-ph_heat_index_next_day.FAILED_VALIDATION.csv
+# Generated outputs written to the repo root by a default run. The NCR dataset itself is small (~11 MB) and is
+# tracked under data/ncr/output/; only stray root-level copies are ignored. (A nationwide `--region all` CSV would
+# be ~105 MB, over GitHub's 100 MB file limit, and should not be committed.)
+/ph_heat_index_next_day.csv
+/ph_heat_index_next_day.FAILED_VALIDATION.csv
 out/
+
+# Runtime state and re-downloadable dependencies inside any cache folder
+api_usage_log.json
+*.whl

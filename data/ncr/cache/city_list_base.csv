@@ -1,0 +1,150 @@
+city_id,City,psgc_name,province_or_group,region,city_class,population_2024,latitude,longitude,coord_method,n_barangays,n_barangays_used,psgc_area_centroid_latitude,psgc_area_centroid_longitude,shift_vs_area_centroid_km
+0102805000,Batac,City of Batac,Ilocos Norte,Region I (Ilocos Region),Component City,56781,18.05626,120.57134,population_weighted_barangay_centroids,43,43,18.03773,120.58422,2.47
+0102812000,Laoag,City of Laoag,Ilocos Norte,Region I (Ilocos Region),Component City,112117,18.1972,120.58038,population_weighted_barangay_centroids,80,80,18.19527,120.57731,0.39
+0102906000,Candon,City of Candon,Ilocos Sur,Region I (Ilocos Region),Component City,61315,17.19045,120.45002,population_weighted_barangay_centroids,42,42,17.19326,120.46471,1.59
+0102934000,Vigan,City of Vigan,Ilocos Sur,Region I (Ilocos Region),Component City,54498,17.56572,120.38453,population_weighted_barangay_centroids,39,39,17.56306,120.38801,0.47
+0103314000,San Fernando (La Union),City of San Fernando,La Union,Region I (Ilocos Region),Component City,124809,16.61161,120.32648,population_weighted_barangay_centroids,59,59,16.60849,120.35815,3.39
+0105503000,Alaminos,City of Alaminos,Pangasinan,Region I (Ilocos Region),Component City,100430,16.15663,119.98134,population_weighted_barangay_centroids,39,39,16.15185,119.97794,0.64
+0105518000,Dagupan,City of Dagupan,Pangasinan,Region I (Ilocos Region),Independent Component City,174777,16.05175,120.34302,population_weighted_barangay_centroids,31,31,16.05414,120.34493,0.33
+0105532000,San Carlos (Pangasinan),City of San Carlos,Pangasinan,Region I (Ilocos Region),Component City,208330,15.91646,120.33399,population_weighted_barangay_centroids,86,86,15.90797,120.32792,1.15
+0105546000,Urdaneta,City of Urdaneta,Pangasinan,Region I (Ilocos Region),Component City,145935,15.97244,120.56182,population_weighted_barangay_centroids,34,34,15.97045,120.55975,0.31
+0201529000,Tuguegarao,Tuguegarao City,Cagayan,Region II (Cagayan Valley),Component City,167297,17.62327,121.72715,population_weighted_barangay_centroids,49,49,17.61033,121.74929,2.75
+0203108000,Cauayan,City of Cauayan,Isabela,Region II (Cagayan Valley),Component City,143539,16.90859,121.78719,population_weighted_barangay_centroids,65,65,16.8784,121.82062,4.89
+0203114000,Ilagan,City of Ilagan,Isabela,Region II (Cagayan Valley),Component City,164020,17.13231,121.91182,population_weighted_barangay_centroids,91,91,17.15021,122.02909,12.62
+0203135000,Santiago,City of Santiago,Isabela,Region II (Cagayan Valley),Independent Component City,150313,16.6837,121.55384,population_weighted_barangay_centroids,37,37,16.67846,121.55678,0.66
+0300803000,Balanga,City of Balanga,Bataan,Region III (Central Luzon),Component City,109931,14.67246,120.51992,population_weighted_barangay_centroids,25,25,14.6677,120.48626,3.66
+0301403000,Baliwag,City of Baliwag,Bulacan,Region III (Central Luzon),Component City,174194,14.95749,120.89032,population_weighted_barangay_centroids,27,27,14.96145,120.88255,0.94
+0301410000,Malolos,City of Malolos,Bulacan,Region III (Central Luzon),Component City,269809,14.84692,120.82406,population_weighted_barangay_centroids,51,51,14.8328,120.8241,1.57
+0301412000,Meycauayan,City of Meycauayan,Bulacan,Region III (Central Luzon),Component City,228023,14.74762,120.97571,population_weighted_barangay_centroids,26,26,14.75239,120.96794,0.99
+0301420000,San Jose del Monte,City of San Jose Del Monte,Bulacan,Region III (Central Luzon),Component City,685688,14.819,121.05792,population_weighted_barangay_centroids,62,62,14.81596,121.08358,2.78
+0304903000,Cabanatuan,City of Cabanatuan,Nueva Ecija,Region III (Central Luzon),Component City,343672,15.49047,120.97905,population_weighted_barangay_centroids,89,89,15.49249,120.99016,1.21
+0304908000,Gapan,City of Gapan,Nueva Ecija,Region III (Central Luzon),Component City,129610,15.2916,120.96575,population_weighted_barangay_centroids,23,23,15.28533,121.0075,4.53
+0304917000,Muñoz,Science City of Muñoz,Nueva Ecija,Region III (Central Luzon),Component City,85061,15.72819,120.90031,population_weighted_barangay_centroids,37,37,15.73348,120.89681,0.7
+0304919000,Palayan,City of Palayan,Nueva Ecija,Region III (Central Luzon),Component City,47883,15.52391,121.10474,population_weighted_barangay_centroids,19,19,15.49342,121.11031,3.44
+0304926000,San Jose,San Jose City,Nueva Ecija,Region III (Central Luzon),Component City,156714,15.7863,120.99282,population_weighted_barangay_centroids,38,38,15.78571,120.99957,0.73
+0305409000,Mabalacat,Mabalacat City,Pampanga,Region III (Central Luzon),Component City,306594,15.20709,120.58964,population_weighted_barangay_centroids,27,27,15.21703,120.55511,3.87
+0305416000,San Fernando (Pampanga),City of San Fernando,Pampanga,Region III (Central Luzon),Component City,377534,15.06542,120.66146,population_weighted_barangay_centroids,35,35,15.06768,120.65832,0.42
+0306916000,Tarlac,City of Tarlac,Tarlac,Region III (Central Luzon),Component City,401892,15.48138,120.59953,population_weighted_barangay_centroids,76,76,15.48145,120.59615,0.36
+0330100000,Angeles,City of Angeles,City of Angeles (Independent City),Region III (Central Luzon),Highly Urbanized City,483452,15.15378,120.58354,population_weighted_barangay_centroids,33,33,15.16521,120.54966,3.85
+0331400000,Olongapo,City of Olongapo,City of Olongapo (Independent City),Region III (Central Luzon),Highly Urbanized City,264903,14.8523,120.2952,population_weighted_barangay_centroids,17,17,14.82678,120.30647,3.09
+0401005000,Batangas,Batangas City,Batangas,Region IV-A (CALABARZON),Component City,358267,13.75498,121.0759,population_weighted_barangay_centroids,105,105,13.71013,121.10262,5.76
+0401007000,Calaca,City of Calaca,Batangas,Region IV-A (CALABARZON),Component City,92281,13.95604,120.81949,population_weighted_barangay_centroids,39,39,13.97727,120.82284,2.39
+0401014000,Lipa,City of Lipa,Batangas,Region IV-A (CALABARZON),Component City,387392,13.94273,121.16226,population_weighted_barangay_centroids,72,72,13.93965,121.17067,0.97
+0401028000,Santo Tomas,City of Sto. Tomas,Batangas,Region IV-A (CALABARZON),Component City,226772,14.09169,121.17273,population_weighted_barangay_centroids,30,30,14.07565,121.18344,2.13
+0401031000,Tanauan,City of Tanauan,Batangas,Region IV-A (CALABARZON),Component City,209697,14.08551,121.11263,population_weighted_barangay_centroids,48,48,14.09442,121.09878,1.79
+0402103000,Bacoor,City of Bacoor,Cavite,Region IV-A (CALABARZON),Component City,661381,14.42076,120.97092,population_weighted_barangay_centroids,47,41,14.40953,120.97538,1.34
+0402104000,Carmona,City of Carmona,Cavite,Region IV-A (CALABARZON),Component City,112140,14.30134,121.03743,population_weighted_barangay_centroids,14,14,14.30211,121.03754,0.09
+0402105000,Cavite,City of Cavite,Cavite,Region IV-A (CALABARZON),Component City,98673,14.47535,120.88188,population_weighted_barangay_centroids,84,84,14.43403,120.74649,15.29
+0402106000,Dasmariñas,City of Dasmariñas,Cavite,Region IV-A (CALABARZON),Component City,744511,14.31864,120.9636,population_weighted_barangay_centroids,75,75,14.31335,120.96463,0.6
+0402108000,General Trias,City of General Trias,Cavite,Region IV-A (CALABARZON),Component City,482453,14.33856,120.89915,population_weighted_barangay_centroids,33,33,14.32236,120.9008,1.81
+0402109000,Imus,City of Imus,Cavite,Region IV-A (CALABARZON),Component City,481949,14.40071,120.93369,population_weighted_barangay_centroids,97,97,14.39649,120.93514,0.49
+0402119000,Tagaytay,City of Tagaytay,Cavite,Region IV-A (CALABARZON),Component City,87811,14.11533,120.94922,population_weighted_barangay_centroids,34,34,14.11611,120.95496,0.63
+0402122000,Trece Martires,City of Trece Martires,Cavite,Region IV-A (CALABARZON),Component City,227892,14.27465,120.86941,population_weighted_barangay_centroids,13,13,14.27631,120.86944,0.19
+0403403000,Biñan,City of Biñan,Laguna,Region IV-A (CALABARZON),Component City,584479,14.32087,121.07455,population_weighted_barangay_centroids,24,24,14.30711,121.0692,1.64
+0403404000,Cabuyao,City of Cabuyao,Laguna,Region IV-A (CALABARZON),Component City,365202,14.2541,121.1393,population_weighted_barangay_centroids,18,18,14.23905,121.11141,3.44
+0403405000,Calamba,City of Calamba,Laguna,Region IV-A (CALABARZON),Component City,575046,14.19837,121.13812,population_weighted_barangay_centroids,54,54,14.1872,121.12032,2.29
+0403424000,San Pablo,City of San Pablo,Laguna,Region IV-A (CALABARZON),Component City,300166,14.06059,121.32528,population_weighted_barangay_centroids,80,80,14.04997,121.3302,1.29
+0403425000,San Pedro,City of San Pedro,Laguna,Region IV-A (CALABARZON),Component City,348968,14.34741,121.0414,population_weighted_barangay_centroids,27,27,14.34918,121.04035,0.23
+0403428000,Santa Rosa,City of Santa Rosa,Laguna,Region IV-A (CALABARZON),Component City,430920,14.29546,121.10633,population_weighted_barangay_centroids,18,18,14.27196,121.09171,3.05
+0405647000,Tayabas,City of Tayabas,Quezon,Region IV-A (CALABARZON),Component City,115318,14.01647,121.59627,population_weighted_barangay_centroids,66,66,14.03705,121.61536,3.08
+0405802000,Antipolo,City of Antipolo,Rizal,Region IV-A (CALABARZON),Component City,913712,14.61526,121.18084,population_weighted_barangay_centroids,16,16,14.65587,121.2363,7.48
+0431200000,Lucena,City of Lucena,City of Lucena (Independent City),Region IV-A (CALABARZON),Highly Urbanized City,280331,13.93448,121.61395,population_weighted_barangay_centroids,33,33,13.93675,121.61549,0.3
+0500506000,Legazpi,City of Legazpi,Albay,Region V (Bicol Region),Component City,210616,13.13849,123.74564,population_weighted_barangay_centroids,70,70,13.09932,123.75318,4.43
+0500508000,Ligao,City of Ligao,Albay,Region V (Bicol Region),Component City,119779,13.21616,123.52594,population_weighted_barangay_centroids,55,55,13.1837,123.49718,4.77
+0500517000,Tabaco,City of Tabaco,Albay,Region V (Bicol Region),Component City,140779,13.34941,123.7187,population_weighted_barangay_centroids,47,47,13.33291,123.69555,3.1
+0501716000,Iriga,City of Iriga,Camarines Sur,Region V (Bicol Region),Component City,115306,13.43613,123.42547,population_weighted_barangay_centroids,36,36,13.45125,123.4373,2.11
+0501724000,Naga (Camarines Sur),City of Naga,Camarines Sur,Region V (Bicol Region),Independent Component City,210545,13.63063,123.21347,population_weighted_barangay_centroids,27,27,13.64303,123.25867,5.08
+0504111000,Masbate,City of Masbate,Masbate,Region V (Bicol Region),Component City,104011,12.35985,123.59941,population_weighted_barangay_centroids,30,30,12.33691,123.56413,4.6
+0506216000,Sorsogon,City of Sorsogon,Sorsogon,Region V (Bicol Region),Component City,187670,12.99691,124.00446,population_weighted_barangay_centroids,64,64,13.01804,123.98978,2.84
+0601914000,Roxas,City of Roxas,Capiz,Region VI (Western Visayas),Component City,185236,11.56713,122.74928,population_weighted_barangay_centroids,47,47,11.55617,122.74472,1.32
+0603035000,Passi,City of Passi,Iloilo,Region VI (Western Visayas),Component City,90313,11.14695,122.65297,population_weighted_barangay_centroids,51,51,11.1665,122.66776,2.71
+0631000000,Iloilo,City of Iloilo,City of Iloilo (Independent City),Region VI (Western Visayas),Highly Urbanized City,473728,10.71298,122.55356,population_weighted_barangay_centroids,180,180,10.72348,122.55519,1.18
+0701242000,Tagbilaran,City of Tagbilaran,Bohol,Region VII (Central Visayas),Component City,106120,9.66128,123.86597,population_weighted_barangay_centroids,15,15,9.6657,123.87113,0.75
+0702211000,Bogo,City of Bogo,Cebu,Region VII (Central Visayas),Component City,90187,11.0318,124.0002,population_weighted_barangay_centroids,29,29,11.01873,123.99218,1.7
+0702214000,Carcar,City of Carcar,Cebu,Region VII (Central Visayas),Component City,140308,10.11047,123.64036,population_weighted_barangay_centroids,15,15,10.11931,123.6305,1.46
+0702223000,Danao,Danao City,Cebu,Region VII (Central Visayas),Component City,161307,10.52442,123.9965,population_weighted_barangay_centroids,42,42,10.54006,123.94035,6.38
+0702234000,Naga (Cebu),City of Naga,Cebu,Region VII (Central Visayas),Component City,138727,10.22946,123.73781,population_weighted_barangay_centroids,28,28,10.2432,123.72252,2.27
+0702250000,Talisay (Cebu),City of Talisay,Cebu,Region VII (Central Visayas),Component City,263832,10.2611,123.83593,population_weighted_barangay_centroids,22,22,10.28352,123.82121,2.97
+0702251000,Toledo,City of Toledo,Cebu,Region VII (Central Visayas),Component City,206692,10.36095,123.67367,population_weighted_barangay_centroids,38,38,10.35879,123.69613,2.47
+0730600000,Cebu,City of Cebu,City of Cebu (Independent City),Region VII (Central Visayas),Highly Urbanized City,965332,10.31841,123.8811,population_weighted_barangay_centroids,80,80,10.37922,123.86,7.15
+0731100000,Lapu-Lapu,City of Lapu-Lapu,City of Lapu-Lapu (Independent City),Region VII (Central Visayas),Highly Urbanized City,497813,10.29395,123.98074,population_weighted_barangay_centroids,30,30,10.28681,123.99244,1.51
+0731300000,Mandaue,City of Mandaue,City of Mandaue (Independent City),Region VII (Central Visayas),Highly Urbanized City,364482,10.3461,123.94241,population_weighted_barangay_centroids,27,27,10.3454,123.94087,0.19
+0802604000,Borongan,City of Borongan,Eastern Samar,Region VIII (Eastern Visayas),Component City,71431,11.61476,125.4302,population_weighted_barangay_centroids,61,61,11.58794,125.33519,10.77
+0803708000,Baybay,City of Baybay,Leyte,Region VIII (Eastern Visayas),Component City,114708,10.67925,124.81779,population_weighted_barangay_centroids,92,91,10.67543,124.83505,1.93
+0803738000,Ormoc,Ormoc City,Leyte,Region VIII (Eastern Visayas),Independent Component City,238545,11.04205,124.59357,population_weighted_barangay_centroids,85,85,11.05419,124.65387,6.72
+0806003000,Calbayog,City of Calbayog,Samar,Region VIII (Eastern Visayas),Component City,187848,12.13025,124.55356,population_weighted_barangay_centroids,157,157,12.19092,124.58643,7.63
+0806005000,Catbalogan,City of Catbalogan,Samar,Region VIII (Eastern Visayas),Component City,107896,11.78814,124.87062,population_weighted_barangay_centroids,57,57,11.83825,124.88693,5.85
+0806407000,Maasin,City of Maasin,Southern Leyte,Region VIII (Eastern Visayas),Component City,85486,10.16325,124.84782,population_weighted_barangay_centroids,70,70,10.18346,124.86174,2.72
+0831600000,Tacloban,City of Tacloban,City of Tacloban (Independent City),Region VIII (Eastern Visayas),Highly Urbanized City,259353,11.24654,124.98153,population_weighted_barangay_centroids,138,138,11.27134,124.95536,3.97
+0907201000,Dapitan,City of Dapitan,Zamboanga del Norte,Region IX (Zamboanga Peninsula),Component City,87699,8.62402,123.42477,population_weighted_barangay_centroids,50,50,8.59262,123.44306,4.03
+0907202000,Dipolog,City of Dipolog,Zamboanga del Norte,Region IX (Zamboanga Peninsula),Component City,136528,8.5602,123.34587,population_weighted_barangay_centroids,21,21,8.50485,123.34756,6.16
+0907322000,Pagadian,City of Pagadian,Zamboanga del Sur,Region IX (Zamboanga Peninsula),Component City,206483,7.83979,123.42093,population_weighted_barangay_centroids,54,54,7.8846,123.34704,9.54
+0931700000,Zamboanga,City of Zamboanga,City of Zamboanga (Independent City),Region IX (Zamboanga Peninsula),Highly Urbanized City,1018849,6.98637,122.09294,population_weighted_barangay_centroids,98,98,7.16296,122.16468,21.17
+0990101000,Isabela,City of Isabela,City of Isabela (Not a Province),Region IX (Zamboanga Peninsula),Component City,151297,6.69397,121.97174,population_weighted_barangay_centroids,45,45,6.65058,121.98685,5.11
+1001312000,Malaybalay,City of Malaybalay,Bukidnon,Region X (Northern Mindanao),Component City,195046,8.11666,125.14905,population_weighted_barangay_centroids,46,46,8.15973,125.18312,6.08
+1001321000,Valencia,City of Valencia,Bukidnon,Region X (Northern Mindanao),Component City,223620,7.91408,125.10185,population_weighted_barangay_centroids,31,31,7.91219,125.08048,2.36
+1004209000,Oroquieta,City of Oroquieta,Misamis Occidental,Region X (Northern Mindanao),Component City,71373,8.47296,123.7822,population_weighted_barangay_centroids,47,47,8.45107,123.73315,5.92
+1004210000,Ozamiz,City of Ozamiz,Misamis Occidental,Region X (Northern Mindanao),Component City,143620,8.15293,123.82203,population_weighted_barangay_centroids,51,51,8.15598,123.77657,5.02
+1004215000,Tangub,City of Tangub,Misamis Occidental,Region X (Northern Mindanao),Component City,68419,8.07416,123.71473,population_weighted_barangay_centroids,55,55,8.09446,123.69706,2.98
+1004307000,El Salvador,City of El Salvador,Misamis Oriental,Region X (Northern Mindanao),Component City,62126,8.53596,124.52252,population_weighted_barangay_centroids,15,15,8.51362,124.49915,3.57
+1004308000,Gingoog,City of Gingoog,Misamis Oriental,Region X (Northern Mindanao),Component City,138895,8.81202,125.11503,population_weighted_barangay_centroids,79,79,8.77592,125.10345,4.21
+1030500000,Cagayan de Oro,City of Cagayan De Oro,City of Cagayan De Oro (Independent City),Region X (Northern Mindanao),Highly Urbanized City,741617,8.46374,124.64866,population_weighted_barangay_centroids,80,80,8.37276,124.60199,11.34
+1030900000,Iligan,City of Iligan,City of Iligan (Independent City),Region X (Northern Mindanao),Highly Urbanized City,368132,8.22832,124.25632,population_weighted_barangay_centroids,44,44,8.2311,124.3728,12.82
+1102315000,Panabo,City of Panabo,Davao del Norte,Region XI (Davao Region),Component City,211242,7.31352,125.65394,population_weighted_barangay_centroids,40,40,7.33037,125.60607,5.6
+1102317000,Samal,Island Garden City of Samal,Davao del Norte,Region XI (Davao Region),Component City,119701,7.07043,125.72107,population_weighted_barangay_centroids,46,46,7.05049,125.73605,2.77
+1102319000,Tagum,City of Tagum,Davao del Norte,Region XI (Davao Region),Component City,300042,7.44373,125.80042,population_weighted_barangay_centroids,23,23,7.43125,125.79579,1.48
+1102403000,Digos,City of Digos,Davao del Sur,Region XI (Davao Region),Component City,192063,6.775,125.34269,population_weighted_barangay_centroids,26,26,6.83944,125.31665,7.72
+1102509000,Mati,City of Mati,Davao Oriental,Region XI (Davao Region),Component City,148672,6.93209,126.23314,population_weighted_barangay_centroids,26,26,6.83124,126.22269,11.27
+1130700000,Davao,City of Davao,City of Davao (Independent City),Region XI (Davao Region),Highly Urbanized City,1848947,7.12071,125.54996,population_weighted_barangay_centroids,182,182,7.2833,125.43042,22.38
+1204704000,Kidapawan,City of Kidapawan,Cotabato,Region XII (SOCCSKSARGEN),Component City,160864,7.02809,125.07366,population_weighted_barangay_centroids,40,40,7.03855,125.05955,1.94
+1206306000,Koronadal,City of Koronadal,South Cotabato,Region XII (SOCCSKSARGEN),Component City,201844,6.49207,124.86741,population_weighted_barangay_centroids,27,27,6.47888,124.88451,2.39
+1206511000,Tacurong,City of Tacurong,Sultan Kudarat,Region XII (SOCCSKSARGEN),Component City,116945,6.67824,124.67452,population_weighted_barangay_centroids,20,20,6.6559,124.67292,2.49
+1230800000,General Santos,City of General Santos,City of General Santos (Independent City),Region XII (SOCCSKSARGEN),Highly Urbanized City,722059,6.11508,125.14945,population_weighted_barangay_centroids,26,26,6.13128,125.1306,2.76
+1380100000,Caloocan,City of Caloocan,National Capital Region (NCR),National Capital Region (NCR),Highly Urbanized City,1712945,14.71232,121.01986,population_weighted_barangay_centroids,193,186,14.71841,121.00636,1.6
+1380200000,Las Piñas,City of Las Piñas,National Capital Region (NCR),National Capital Region (NCR),Highly Urbanized City,615549,14.44681,120.99421,population_weighted_barangay_centroids,20,20,14.44139,120.99521,0.61
+1380300000,Makati,City of Makati,National Capital Region (NCR),National Capital Region (NCR),Highly Urbanized City,309770,14.55992,121.02086,population_weighted_barangay_centroids,23,23,14.55439,121.02394,0.7
+1380400000,Malabon,City of Malabon,National Capital Region (NCR),National Capital Region (NCR),Highly Urbanized City,389929,14.66832,120.95983,population_weighted_barangay_centroids,21,21,14.67412,120.95856,0.66
+1380500000,Mandaluyong,City of Mandaluyong,National Capital Region (NCR),National Capital Region (NCR),Highly Urbanized City,465902,14.58068,121.03804,population_weighted_barangay_centroids,27,27,14.5831,121.04139,0.45
+1380600000,Manila,City of Manila,National Capital Region (NCR),National Capital Region (NCR),Highly Urbanized City,1902590,14.60193,120.98546,population_weighted_barangay_centroids,897,897,14.59775,120.98586,0.47
+1380700000,Marikina,City of Marikina,National Capital Region (NCR),National Capital Region (NCR),Highly Urbanized City,471323,14.64936,121.10466,population_weighted_barangay_centroids,16,16,14.64732,121.10498,0.23
+1380800000,Muntinlupa,City of Muntinlupa,National Capital Region (NCR),National Capital Region (NCR),Highly Urbanized City,552225,14.40586,121.03653,population_weighted_barangay_centroids,9,9,14.40229,121.0336,0.51
+1380900000,Navotas,City of Navotas,National Capital Region (NCR),National Capital Region (NCR),Highly Urbanized City,252878,14.66031,120.94509,population_weighted_barangay_centroids,18,18,14.67509,120.93588,1.92
+1381000000,Parañaque,City of Parañaque,National Capital Region (NCR),National Capital Region (NCR),Highly Urbanized City,703245,14.48283,121.01464,population_weighted_barangay_centroids,16,16,14.48353,121.015,0.09
+1381100000,Pasay,Pasay City,National Capital Region (NCR),National Capital Region (NCR),Highly Urbanized City,453186,14.53686,121.00443,population_weighted_barangay_centroids,201,201,14.53142,121.004,0.61
+1381200000,Pasig,City of Pasig,National Capital Region (NCR),National Capital Region (NCR),Highly Urbanized City,853050,14.57452,121.08819,population_weighted_barangay_centroids,30,30,14.57886,121.08548,0.56
+1381300000,Quezon,Quezon City,National Capital Region (NCR),National Capital Region (NCR),Highly Urbanized City,3084270,14.67478,121.05463,population_weighted_barangay_centroids,142,142,14.68049,121.06047,0.89
+1381400000,San Juan,City of San Juan,National Capital Region (NCR),National Capital Region (NCR),Highly Urbanized City,134312,14.60362,121.03467,population_weighted_barangay_centroids,21,21,14.60248,121.03669,0.25
+1381500000,Taguig,City of Taguig,National Capital Region (NCR),National Capital Region (NCR),Highly Urbanized City,1308085,14.52086,121.05893,population_weighted_barangay_centroids,38,38,14.52201,121.06121,0.28
+1381600000,Valenzuela,City of Valenzuela,National Capital Region (NCR),National Capital Region (NCR),Highly Urbanized City,725173,14.70463,120.98231,population_weighted_barangay_centroids,33,33,14.70999,120.97916,0.69
+1403213000,Tabuk,City of Tabuk,Kalinga,Cordillera Administrative Region (CAR),Component City,122771,17.42968,121.45443,population_weighted_barangay_centroids,43,43,17.41007,121.42977,3.4
+1430300000,Baguio,City of Baguio,City of Baguio (Independent City),Cordillera Administrative Region (CAR),Highly Urbanized City,368426,16.40788,120.59211,population_weighted_barangay_centroids,129,128,16.39995,120.59617,0.98
+1600203000,Cabadbaran,City of Cabadbaran,Agusan del Norte,Region XIII (Caraga),Component City,82343,9.12004,125.57206,population_weighted_barangay_centroids,31,31,9.14395,125.65367,9.34
+1600301000,Bayugan,City of Bayugan,Agusan del Sur,Region XIII (Caraga),Component City,110313,8.72939,125.76454,population_weighted_barangay_centroids,43,43,8.75895,125.79741,4.88
+1606724000,Surigao,City of Surigao,Surigao del Norte,Region XIII (Caraga),Component City,177333,9.77363,125.49556,population_weighted_barangay_centroids,54,54,9.77633,125.54179,5.07
+1606803000,Bislig,City of Bislig,Surigao del Sur,Region XIII (Caraga),Component City,99872,8.19338,126.32275,population_weighted_barangay_centroids,24,24,8.18279,126.28534,4.28
+1606819000,Tandag,City of Tandag,Surigao del Sur,Region XIII (Caraga),Component City,63098,9.0735,126.17457,population_weighted_barangay_centroids,21,21,9.07434,126.12836,5.07
+1630400000,Butuan,City of Butuan,City of Butuan (Independent City),Region XIII (Caraga),Highly Urbanized City,385530,8.93785,125.55206,population_weighted_barangay_centroids,86,86,8.90315,125.57703,4.73
+1705205000,Calapan,City of Calapan,Oriental Mindoro,MIMAROPA Region,Component City,148558,13.38072,121.17996,population_weighted_barangay_centroids,62,62,13.35435,121.18702,3.03
+1731500000,Puerto Princesa,City of Puerto Princesa,City of Puerto Princesa (Independent City),MIMAROPA Region,Highly Urbanized City,316384,9.79846,118.74824,population_weighted_barangay_centroids,66,66,9.91416,118.78029,13.34
+1804502000,Bago,City of Bago,Negros Occidental,Negros Island Region (NIR),Component City,192993,10.51758,122.93362,population_weighted_barangay_centroids,24,24,10.50028,122.98687,6.13
+1804504000,Cadiz,City of Cadiz,Negros Occidental,Negros Island Region (NIR),Component City,161558,10.92594,123.27782,population_weighted_barangay_centroids,22,22,10.85164,123.25482,8.63
+1804509000,Escalante,City of Escalante,Negros Occidental,Negros Island Region (NIR),Component City,97050,10.81678,123.49567,population_weighted_barangay_centroids,21,21,10.80219,123.47702,2.6
+1804510000,Himamaylan,City of Himamaylan,Negros Occidental,Negros Island Region (NIR),Component City,117286,10.09751,122.89664,population_weighted_barangay_centroids,19,19,10.05998,122.92553,5.24
+1804515000,Kabankalan,City of Kabankalan,Negros Occidental,Negros Island Region (NIR),Component City,210893,9.89345,122.82653,population_weighted_barangay_centroids,32,32,9.85644,122.82605,4.12
+1804516000,La Carlota,City of La Carlota,Negros Occidental,Negros Island Region (NIR),Component City,67740,10.41683,122.95955,population_weighted_barangay_centroids,14,14,10.41449,122.98772,3.09
+1804523000,Sagay,City of Sagay,Negros Occidental,Negros Island Region (NIR),Component City,152543,10.87918,123.4127,population_weighted_barangay_centroids,25,25,10.85073,123.39568,3.67
+1804524000,San Carlos (Negros Occidental),City of San Carlos,Negros Occidental,Negros Island Region (NIR),Component City,133175,10.48561,123.34903,population_weighted_barangay_centroids,18,18,10.48914,123.30737,4.57
+1804526000,Silay,City of Silay,Negros Occidental,Negros Island Region (NIR),Component City,136802,10.79026,123.01715,population_weighted_barangay_centroids,16,16,10.76663,123.07964,7.31
+1804527000,Sipalay,City of Sipalay,Negros Occidental,Negros Island Region (NIR),Component City,73847,9.75956,122.45441,population_weighted_barangay_centroids,17,17,9.74944,122.47701,2.72
+1804528000,Talisay (Negros Occidental),City of Talisay,Negros Occidental,Negros Island Region (NIR),Component City,109204,10.72544,123.0133,population_weighted_barangay_centroids,27,27,10.70128,123.08352,8.13
+1804531000,Victorias,City of Victorias,Negros Occidental,Negros Island Region (NIR),Component City,90290,10.88424,123.07739,population_weighted_barangay_centroids,26,26,10.8504,123.1116,5.3
+1804604000,Bais,City of Bais,Negros Oriental,Negros Island Region (NIR),Component City,88050,9.59197,123.06671,population_weighted_barangay_centroids,35,35,9.59145,123.02614,4.45
+1804606000,Bayawan,City of Bayawan,Negros Oriental,Negros Island Region (NIR),Component City,126744,9.47028,122.81523,population_weighted_barangay_centroids,28,28,9.50892,122.81094,4.32
+1804608000,Canlaon,City of Canlaon,Negros Oriental,Negros Island Region (NIR),Component City,62785,10.38283,123.20973,population_weighted_barangay_centroids,12,12,10.37659,123.20783,0.72
+1804610000,Dumaguete,City of Dumaguete,Negros Oriental,Negros Island Region (NIR),Component City,142171,9.30465,123.2874,population_weighted_barangay_centroids,30,30,9.3031,123.28404,0.41
+1804611000,Guihulngan,City of Guihulngan,Negros Oriental,Negros Island Region (NIR),Component City,106576,10.17512,123.24103,population_weighted_barangay_centroids,33,33,10.19364,123.22273,2.87
+1804621000,Tanjay,City of Tanjay,Negros Oriental,Negros Island Region (NIR),Component City,84593,9.50801,123.11355,population_weighted_barangay_centroids,24,24,9.5047,123.04764,7.24
+1830200000,Bacolod,City of Bacolod,City of Bacolod (Independent City),Negros Island Region (NIR),Highly Urbanized City,624787,10.64897,122.96823,population_weighted_barangay_centroids,61,61,10.64705,122.99299,2.71
+1900702000,Lamitan,City of Lamitan,Basilan,Bangsamoro Autonomous Region In Muslim Mindanao (BARMM),Component City,116652,6.65252,122.12165,population_weighted_barangay_centroids,45,45,6.64148,122.0986,2.83
+1903617000,Marawi,City of Marawi,Lanao del Sur,Bangsamoro Autonomous Region In Muslim Mindanao (BARMM),Component City,259993,8.00547,124.28982,population_weighted_barangay_centroids,101,98,8.02122,124.29664,1.91
+1908703000,Cotabato,City of Cotabato,Maguindanao del Norte,Bangsamoro Autonomous Region In Muslim Mindanao (BARMM),Independent Component City,383383,7.21066,124.24191,population_weighted_barangay_centroids,37,37,7.20862,124.23145,1.18

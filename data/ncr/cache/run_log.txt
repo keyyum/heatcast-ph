@@ -1,0 +1,109 @@
+2026-10-07 09:10:52Z  === ph heat index build v1.0.0 | 2015-01-01..2025-12-29 | model=era5 ===
+2026-10-07 09:10:52Z  Downloading psgc==2026.4.13.0 from PyPI (city list source)...
+2026-10-07 09:10:53Z  Scope ['NCR']: 16 of 149 PSGC cities (National Capital Region (NCR))
+2026-10-07 09:10:53Z  City list: 16 of 16 selected cities (PSGC total 149)
+2026-10-07 09:10:53Z  Endpoint: https://archive-api.open-meteo.com/v1/archive
+2026-10-07 09:10:53Z  Preflight: Caloocan 2015-01-01..2015-01-03, model=era5
+2026-10-07 09:10:53Z    OK: all 10 variables present; grid cell (14.75, 121.0), elevation 25.0 m
+2026-10-07 09:10:54Z  Chunks: 176 total | 0 cached | 0 rebuilt from retained raw data | 176 to fetch (~4,590 weighted API calls)
+2026-10-07 09:10:54Z    client daily budget 9,500 calls -> about 1 day(s) of runs on the free tier
+2026-10-07 09:11:08Z    rate budget: waiting 47s for the minute window to free up
+2026-10-07 09:11:57Z    rate budget: waiting 1s for the minute window to free up
+2026-10-07 09:12:00Z    rate budget: waiting 1s for the minute window to free up
+2026-10-07 09:12:04Z    rate budget: waiting 2s for the minute window to free up
+2026-10-07 09:12:09Z    rate budget: waiting 46s for the minute window to free up
+2026-10-07 09:12:58Z    rate budget: waiting 2s for the minute window to free up
+2026-10-07 09:13:04Z    rate budget: waiting 2s for the minute window to free up
+2026-10-07 09:13:10Z    rate budget: waiting 46s for the minute window to free up
+2026-10-07 09:13:59Z    rate budget: waiting 2s for the minute window to free up
+2026-10-07 09:14:06Z    rate budget: waiting 1s for the minute window to free up
+2026-10-07 09:14:11Z    rate budget: waiting 46s for the minute window to free up
+2026-10-07 09:15:00Z    rate budget: waiting 2s for the minute window to free up
+2026-10-07 09:15:04Z    rate budget: waiting 1s for the minute window to free up
+2026-10-07 09:15:12Z    rate budget: waiting 46s for the minute window to free up
+2026-10-07 09:16:02Z    rate budget: waiting 1s for the minute window to free up
+2026-10-07 09:16:05Z    rate budget: waiting 1s for the minute window to free up
+2026-10-07 09:16:08Z    rate budget: waiting 1s for the minute window to free up
+2026-10-07 09:16:13Z    rate budget: waiting 46s for the minute window to free up
+2026-10-07 09:17:02Z    rate budget: waiting 2s for the minute window to free up
+2026-10-07 09:17:09Z    rate budget: waiting 1s for the minute window to free up
+2026-10-07 09:17:14Z    rate budget: waiting 47s for the minute window to free up
+2026-10-07 09:18:03Z    rate budget: waiting 2s for the minute window to free up
+2026-10-07 09:18:10Z    rate budget: waiting 1s for the minute window to free up
+2026-10-07 09:18:15Z    rate budget: waiting 46s for the minute window to free up
+2026-10-07 09:19:05Z    rate budget: waiting 1s for the minute window to free up
+2026-10-07 09:19:09Z    rate budget: waiting 1s for the minute window to free up
+2026-10-07 09:19:11Z    rate budget: waiting 1s for the minute window to free up
+2026-10-07 09:19:16Z    rate budget: waiting 46s for the minute window to free up
+2026-10-07 09:20:03Z    rate budget: waiting 3051s for the hour window to free up
+2026-10-07 10:10:59Z  Assembling dataset from cached chunks...
+2026-10-07 10:11:03Z  
+==============================================================================
+DATASET SUMMARY
+==============================================================================
+2026-10-07 10:11:03Z  Shape        : 64,240 rows x 26 columns
+2026-10-07 10:11:03Z  Date range   : 2015-01-01 .. 2025-12-28 (last day per city dropped: tomorrow unavailable)
+2026-10-07 10:11:03Z  Cities       : 16   (expected 4,015 rows per city)
+2026-10-07 10:11:03Z  Missing      : 0   Duplicates (City+Date): 0   Gaps: none
+2026-10-07 10:11:03Z  Impossible   : none
+2026-10-07 10:11:03Z  Implausible  : none
+2026-10-07 10:11:03Z  Target check : HeatIndex_Max_Tomorrow == next day's HeatIndex_Max_Today (same city): 64,224 rows via shift, 64,224 via merge -> 0 / 0 mismatches
+2026-10-07 10:11:03Z  
+TARGET class distribution - HeatLevelTomorrow
+2026-10-07 10:11:03Z    Not Hazardous          158    0.25%
+2026-10-07 10:11:03Z    Caution              8,733   13.59%
+2026-10-07 10:11:03Z    Extreme Caution     50,018   77.86%
+2026-10-07 10:11:03Z    Danger               5,331    8.30%
+2026-10-07 10:11:03Z    Extreme Danger           0    0.00%
+2026-10-07 10:11:03Z    TOTAL               64,240  100.00%
+2026-10-07 10:11:03Z  
+Reference - HeatLevelToday
+2026-10-07 10:11:03Z    Not Hazardous          174    0.27%
+2026-10-07 10:11:03Z    Caution              8,733   13.59%
+2026-10-07 10:11:03Z    Extreme Caution     50,002   77.84%
+2026-10-07 10:11:03Z    Danger               5,331    8.30%
+2026-10-07 10:11:03Z    Extreme Danger           0    0.00%
+2026-10-07 10:11:03Z    TOTAL               64,240  100.00%
+2026-10-07 10:11:03Z  
+Summary statistics (numeric columns)
+2026-10-07 10:11:03Z                             count     mean      std    min      25%      50%      75%      max
+Latitude               64,240.00    14.59     0.09  14.41    14.53    14.59    14.66    14.71
+Longitude              64,240.00   121.02     0.04 120.95   120.99   121.02   121.04   121.10
+Elevation              64,240.00    17.62    12.04   2.00     7.75    16.50    19.75    51.00
+Month                  64,240.00     6.52     3.45   1.00     4.00     7.00    10.00    12.00
+DayOfYear              64,240.00   183.00   105.37   1.00    92.00   183.00   274.00   366.00
+Temp_Min               64,240.00    26.09     1.12  20.90    25.50    26.10    26.80    30.00
+Temp_Mean              64,240.00    28.34     1.40  22.20    27.40    28.29    29.20    33.05
+Temp_Max               64,240.00    31.25     1.98  23.50    29.90    31.20    32.50    36.90
+Humidity_Min           64,240.00    66.05     9.85  33.00    59.00    66.00    73.00    92.00
+Humidity_Mean          64,240.00    77.75     6.81  56.67    72.75    78.38    82.83    94.54
+Humidity_Max           64,240.00    86.88     4.87  68.00    83.00    88.00    91.00    99.00
+DewPoint_Mean          64,240.00    23.92     1.54  16.88    23.04    24.37    25.05    26.82
+Pressure_Mean          64,240.00 1,010.36     2.74 995.20 1,008.85 1,010.30 1,012.00 1,020.27
+CloudCover_Mean        64,240.00    66.36    29.68   1.79    40.17    72.08    95.71   100.00
+WindSpeed_Mean         64,240.00     9.70     4.95   2.07     5.70     8.79    12.58    40.99
+WindSpeed_Max          64,240.00    15.83     6.53   4.00    10.70    15.00    20.00    52.40
+WindGust_Max           64,240.00    32.52    10.88  12.20    24.10    31.00    39.20   113.00
+Rainfall_Total         64,240.00     5.67    11.90   0.00     0.00     0.90     6.50   175.10
+RainHours              64,240.00     7.21     7.82   0.00     0.00     4.00    13.00    24.00
+SolarRadiation_Total   64,240.00 4,794.98 1,324.23 287.00 4,068.00 4,924.50 5,791.00 7,766.00
+HeatIndex_Max_Today    64,240.00    37.24     3.59  23.86    34.70    37.51    39.88    48.16
+HeatIndex_Max_Tomorrow 64,240.00    37.25     3.58  23.86    34.72    37.51    39.88    48.16
+2026-10-07 10:11:03Z  Running the pre-modelling analysis (no model is trained)...
+2026-10-07 10:11:07Z  
+ANALYSIS KEY FINDINGS
+2026-10-07 10:11:07Z    - 16 cities -> 2 ERA5 grid cell(s); 2 distinct non-thermal series; effective independent series ~1.05 (95% of anomaly variance needs 1 component(s)).
+2026-10-07 10:11:07Z    - Elevation adjustment: material (API elevations 2-51 m; same-cell mean |dHI| 0.21 C; class disagreement 2.3%).
+2026-10-07 10:11:07Z    - Class counts (HeatLevelTomorrow rows | distinct days | episodes | status): Not Hazardous: 158 (0.25%) | 16 | 13 | VERY FEW; Caution: 8,733 (13.59%) | 685 | 221 | ok; Extreme Caution: 50,018 (77.86%) | 3,510 | 204 | ok; Danger: 5,331 (8.30%) | 723 | 238 | ok; Extreme Danger: 0 (0.00%) | 0 | 0 | ABSENT
+2026-10-07 10:11:07Z    - Leakage: random split -> 100% of test rows have a same-day same-cell twin in train; chronological -> 0%.
+2026-10-07 10:11:07Z  
+==============================================================================
+OUTPUT FILES
+==============================================================================
+2026-10-07 10:11:07Z    /content/drive/MyDrive/heatcast_ncr/output/ph_heat_index_next_day.csv  (10.89 MB)
+2026-10-07 10:11:07Z    /content/drive/MyDrive/heatcast_ncr/output/ph_heat_index_data_dictionary.csv  (0.00 MB)
+2026-10-07 10:11:07Z    /content/drive/MyDrive/heatcast_ncr/output/ph_heat_index_city_list.csv  (0.00 MB)
+2026-10-07 10:11:07Z    /content/drive/MyDrive/heatcast_ncr/output/dataset_documentation.md  (0.02 MB)
+2026-10-07 10:11:07Z    /content/drive/MyDrive/heatcast_ncr/output/ncr_dataset_analysis.md  (0.02 MB)
+2026-10-07 10:11:07Z  
+VALIDATION: PASSED | 64,240 rows, 16 cities, 2015-01-01..2025-12-28 | missing=0 dup=0 gaps=none impossible=none | tomorrow==next-day-today mismatches=0

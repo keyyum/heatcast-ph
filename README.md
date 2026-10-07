@@ -7,11 +7,12 @@ of the PSA PSGC list) and is not meant to be extended automatically. The ML task
 `HeatLevelTomorrow`; Logistic Regression, Random Forest and Gradient Boosting are planned, with Macro F1 as the
 likely primary metric. **No model is trained here.**
 
-> **Status:** the pipeline and the pre-modelling analysis are implemented and tested (94 tests) against a local mock of
-> the Open-Meteo API. **The real NCR dataset has not been built yet**: the environment this was developed in blocks
-> `open-meteo.com`, so no real class counts or grid-series measurements exist yet. Run it where the API is reachable
-> (Google Colab: `ph_heat_index_colab.ipynb`); one run costs ~4,600 weighted API calls = one day of the free tier.
-> Nothing in this repository is real weather data.
+> **Status:** the real NCR dataset has been built (2026-10-07, Google Colab, Open-Meteo / ERA5), validated, and committed
+> with its raw API responses under [`data/ncr/`](data/ncr/README.md): 64,240 rows = 16 cities × 4,015 days, no missing values,
+> duplicates or gaps, rebuildable byte-for-byte offline. No model has been trained. **Two classes are unusable as they stand:
+> Extreme Danger never occurs (the highest heat index is 48.16 °C) and Not Hazardous occurs on only 16 days.** Nothing has been merged
+> or dropped; see `data/ncr/output/ncr_dataset_analysis.md` and the decisions listed in `data/ncr/README.md`. The test suite
+> (`tests/`) runs against a synthetic mock of the API plus checks on the committed real data.
 
 ## What the data are (and are not)
 
@@ -78,6 +79,7 @@ Generated automatically after the dataset passes validation; also runnable alone
   `expanding_window_folds(df, n_splits, gap_days)`; every date, with all its cities, stays on one side.
 * `add_lag_features(df)` builds 1–3 day lags, 3-day means and a pressure change, calendar-aware and strictly past-only
   (tested by scrambling the future and checking nothing in the past changes).
+* The committed dataset is in `data/ncr/output/`; to rebuild or verify it without any API call see `data/ncr/README.md`.
 * `INPUT_FEATURES` is the specified 22-column feature list; `assert_no_future_information(cols)` rejects
   `HeatIndex_Max_Tomorrow`, `HeatLevelTomorrow` and anything that looks like tomorrow.
 
@@ -90,15 +92,18 @@ Generated automatically after the dataset passes validation; also runnable alone
   A one-request preflight verifies all 10 variables come back (the docs are ambiguous about ERA5 wind gusts).
 - **City list:** 149 PSGC cities from a pinned, SHA-256-verified `psgc==2026.4.13.0` PyPI wheel, filtered to NCR. Coordinates are
   population-weighted barangay centres (the package's area centroids can sit far from the urban core).
-- **Raw responses are kept** (gzip, `raw/` in the work dir, a few tens of MB for NCR) so an aggregation fix never needs the API again.
+- **Raw responses are kept** (gzip, `raw/` in the work dir, ~25 MB for NCR and committed under `data/ncr/cache/`) so an aggregation fix never needs the API again.
 - **Resumable and rate-limit aware:** per city-year cache, persisted call budget, graceful stop on the daily limit.
 
 ## Tests
 
 ```bash
-python -m unittest discover -s tests -v      # ~35 s; two tests need PyPI (skipped if unreachable)
+python -m unittest discover -s tests -v      # ~1 min; two tests need PyPI (skipped if unreachable)
 pip install metpy                             # optional: heat-index cross-check against MetPy
 ```
+
+`tests/test_committed_data.py` checks the committed real build: it validates, the quoted numbers and checksum are true, and the
+current code rebuilds it byte-for-byte from the committed cache and from the raw responses alone (offline).
 
 `tests/mock_open_meteo.py` serves **synthetic** data with fault injection (500/503, 429 minutely/hourly/daily, truncated JSON,
 short arrays, wrong timezone, quota) and a lapse-rate elevation effect. The analysis is tested against panels with
@@ -111,6 +116,7 @@ build_ph_heat_index_dataset.py   dataset pipeline (fetch, cache, aggregate, targ
 ncr_dataset_analysis.py          pre-modelling analysis (no models trained)
 ncr_modeling_utils.py            date-based splits, past-only lag features, future-information guard
 ph_heat_index_colab.ipynb        Colab runner (Drive-backed cache)
+data/ncr/                        the real NCR build: output/ (5 files), cache/ (raw responses + chunks), README.md
 reference/ph_city_list_base.csv  the 149-city PSGC list before the NCR filter and API enrichment
 tests/                           unit + end-to-end tests and the mock API
 ```
