@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Build cache and run logs (resumable API cache; can be large)
+ph_heat_index_cache/
+*.tmp
+
+# Generated outputs. The dataset CSV is ~105 MB, over GitHub's 100 MB file limit; keep it out of git
+# (store on Drive / release assets / Git LFS instead).
+ph_heat_index_next_day.csv
+ph_heat_index_next_day.FAILED_VALIDATION.csv
+out/
