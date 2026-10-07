@@ -354,6 +354,24 @@ def build_city_list(cache_dir: Path, log: Logger) -> pd.DataFrame:
     return df
 
 
+REGION_ALIASES = {"metro manila": "National Capital Region"}
+
+
+def filter_regions(cities: pd.DataFrame, patterns: list[str]) -> pd.DataFrame:
+    """Keep cities whose PSGC region name contains any pattern (case-insensitive; 'NCR' and
+    'Metro Manila' both select the National Capital Region). Raises ValueError listing the
+    available regions when nothing matches."""
+    mask = pd.Series(False, index=cities.index)
+    for raw in patterns:
+        for pat in (x.strip() for x in raw.split(",") if x.strip()):
+            key = REGION_ALIASES.get(pat.lower(), pat)
+            mask |= cities["region"].str.contains(re.escape(key), case=False, regex=True)
+    if not mask.any():
+        raise ValueError(f"no PSGC region matches {patterns!r}. Available regions: "
+                         + "; ".join(sorted(cities["region"].unique())))
+    return cities.loc[mask].reset_index(drop=True)
+
+
 # --------------------------------------------------------------------------- #
 # Rate budget + Open-Meteo client
 # --------------------------------------------------------------------------- #
@@ -1077,8 +1095,15 @@ def write_documentation(path: Path, ctx: dict) -> None:
     warn = "\n".join(f"- {w}" for w in ctx["report"]["warnings"]) or "- none"
     subset_note = ""
     selection_note = ", i.e. the full official city list of that release."
+    scope_note = ""
+    if ctx["region_filter"]:
+        regions = ", ".join(sorted(cities["region"].unique()))
+        selection_note = (f"; **restricted by request to {regions}** ({ctx['n_cities_total']} of the "
+                          f"{ctx['n_cities_all']} cities in that release).")
+        scope_note = (f"\n> **Scope: region filter `{'`, `'.join(ctx['region_filter'])}`** - {ctx['n_cities_total']} of "
+                      f"{ctx['n_cities_all']} Philippine cities ({regions}). This is not a nationwide dataset.\n")
     if ctx["is_subset"]:
-        selection_note = f"; a subset of the {ctx['n_cities_total']} cities in that release."
+        selection_note = f"; a subset of the {ctx['n_cities_total']} selected cities."
     if ctx["is_subset"]:
         subset_note = ("\n> **NOTE: this is a SUBSET build** (`--max-cities` / `--allow-partial`): "
                        f"{c['n_cities']} of {ctx['n_cities_total']} cities.\n")
@@ -1086,7 +1111,7 @@ def write_documentation(path: Path, ctx: dict) -> None:
 
 Generated {ctx['generated_at']} by `build_ph_heat_index_dataset.py` v{SCRIPT_VERSION}
 (Python {ctx['py']}, pandas {pd.__version__}, numpy {np.__version__}).
-{subset_note}
+{scope_note}{subset_note}
 ## What this is
 
 One row per city-day for **{c['n_cities']} Philippine cities**, {c['date_min']} to {c['date_max']}
@@ -1285,6 +1310,9 @@ def parse_args(argv=None) -> argparse.Namespace:
     p.add_argument("--model", default=DEFAULT_MODEL, help="Open-Meteo reanalysis model (default era5)")
     p.add_argument("--api-url", default=None, help="override endpoint (testing)")
     p.add_argument("--api-key", default=os.environ.get("OPEN_METEO_API_KEY"), help="commercial key -> customer endpoint, no client budgets")
+    p.add_argument("--region", action="append", metavar="NAME",
+                   help="only cities in matching PSGC regions, e.g. --region NCR (case-insensitive substring; "
+                        "comma-separated or repeatable; default: all regions)")
     p.add_argument("--max-cities", type=int, default=None, help="only the first N cities (smoke test); implies --allow-partial")
     p.add_argument("--allow-partial", action="store_true", help="write outputs from cities whose chunks are all complete")
     p.add_argument("--no-keep-raw", dest="keep_raw", action="store_false",
@@ -1326,11 +1354,20 @@ def main(argv=None) -> int:
     else:
         cities = build_city_list(work_dir, log)
         atomic_write_csv(cities, base_path)
-    n_total = len(cities)
+    n_all = len(cities)
+    if args.region:
+        try:
+            cities = filter_regions(cities, args.region)
+        except ValueError as exc:
+            log(f"FATAL: {exc}")
+            return 1
+        log(f"Region filter {args.region}: {len(cities)} of {n_all} PSGC cities "
+            f"({', '.join(sorted(cities['region'].unique()))})")
+    n_total = len(cities)  # the intended universe (all cities, or the chosen regions)
     if args.max_cities:
         cities = cities.head(args.max_cities).reset_index(drop=True)
         args.allow_partial = True
-    log(f"City list: {len(cities)} of {n_total} PSGC cities selected")
+    log(f"City list: {len(cities)} of {n_total} selected cities (PSGC total {n_all})")
 
     key = cache_key(args.model)
     chunks = plan_chunks(cities, args.start, args.end)
@@ -1444,6 +1481,7 @@ def main(argv=None) -> int:
     mtimes = [dt.datetime.fromtimestamp(p.stat().st_mtime, dt.timezone.utc) for p in chunk_files if p.exists()]
     ctx = {
         "report": report, "cities": city_out, "info": info, "is_subset": is_subset, "n_cities_total": n_total,
+        "n_cities_all": n_all, "region_filter": args.region,
         "generated_at": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
         "py": sys.version.split()[0], "api_url": API_URL, "model": args.model, "start": args.start, "end": args.end,
         "fetched_between": f"{min(mtimes):%Y-%m-%d} and {max(mtimes):%Y-%m-%d}" if mtimes else "n/a",

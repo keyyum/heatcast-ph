@@ -26,6 +26,12 @@ budget is used up. A client-side budget (500/min, 4,500/h, 9,500/day, persisted 
 under the server limits; delete that file if you know the server quota has reset. With a commercial key
 (`OPEN_METEO_API_KEY` or `--api-key`) the customer endpoint is used and no client budget applies.
 
+**NCR only?** Add `--region NCR` (also matches `Metro Manila`; any PSGC region name or fragment works, comma-separated
+or repeated). That is 16 cities ≈ 4,600 weighted calls, i.e. **one day** on the free tier instead of five, and the
+generated documentation states the regional scope. Caveat: Metro Manila's 16 cities fall into only about **2 ERA5
+grid cells**, so you get roughly two distinct weather series, not sixteen (they differ mainly by elevation
+adjustment). The cache is keyed per city, so a regional run reuses chunks from a full run and vice versa.
+
 Useful flags: `--max-cities 3` (smoke test, clearly labelled SUBSET output), `--allow-partial`,
 `--validate-only FILE.csv`, `--model` (default `era5`), `--no-keep-raw`. `--help` lists the rest.
 

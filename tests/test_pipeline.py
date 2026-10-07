@@ -382,14 +382,15 @@ class ClientTests(unittest.TestCase):
             self.assertEqual(len(mock.requests), 2)       # the refused call never reached the server
 
 
-def seed_city_list(work: Path, n: int = 4) -> pd.DataFrame:
+def seed_city_list(work: Path, n: int = 4, regions: list[str] | None = None) -> pd.DataFrame:
     """Offline stand-in for the PSGC-derived city list (same schema as build_city_list)."""
     coords = [(14.60, 120.98), (10.32, 123.88), (7.12, 125.55), (16.41, 120.59), (9.80, 118.75), (6.99, 122.09)]
     rows = []
     for i in range(n):
         lat, lon = coords[i % len(coords)]
         rows.append({"city_id": f"99{i:08d}", "City": f"TestCity{i}", "psgc_name": f"City of TestCity{i}",
-                     "province_or_group": "Testprov", "region": "Test Region", "city_class": "Component City",
+                     "province_or_group": "Testprov", "region": (regions or ["Test Region"])[i % len(regions or [1])],
+                     "city_class": "Component City",
                      "population_2024": 100000 + i, "latitude": lat + 0.01 * i, "longitude": lon + 0.01 * i,
                      "coord_method": "population_weighted_barangay_centroids", "n_barangays": 10,
                      "n_barangays_used": 10, "psgc_area_centroid_latitude": lat, "psgc_area_centroid_longitude": lon,
@@ -475,6 +476,60 @@ class PipelineTests(unittest.TestCase):
             payload = json.load(fh)
         self.assertEqual(len(payload["hourly"]["time"]), 365 * 24)
         self.assertFalse((self.work / "api_usage_log.json").exists())               # key => free-tier usage log untouched
+
+    REGIONS = ["National Capital Region (NCR)", "Region VII (Central Visayas)",
+               "National Capital Region (NCR)", "Region XI (Davao Region)"]
+
+    def test_region_filter_selects_only_matching_cities_and_labels_scope(self):
+        seed_city_list(self.work, 4, regions=self.REGIONS)
+        with MockOpenMeteo() as mock:
+            self.assertEqual(self.run_main(mock, "--region", "NCR"), 0)
+            n_requests = len(mock.data_requests())
+        self.assertEqual(n_requests, 1 + 2 * 2)                      # preflight + 2 NCR cities x 2 year chunks
+        df = pd.read_csv(self.out / "ph_heat_index_next_day.csv")
+        self.assertEqual(sorted(df["City"].unique()), ["TestCity0", "TestCity2"])
+        cl = pd.read_csv(self.out / "ph_heat_index_city_list.csv")
+        self.assertEqual(set(cl["region"]), {"National Capital Region (NCR)"})
+        doc = (self.out / "dataset_documentation.md").read_text(encoding="utf-8")
+        self.assertIn("Scope: region filter", doc)
+        self.assertIn("2 of the 4 cities", doc)
+        self.assertNotIn("SUBSET build", doc)                  # an intentional region scope is not a partial build
+        self.assertNotIn("full official city list", doc)
+
+    def test_region_alias_and_multiple_regions(self):
+        cities = seed_city_list(self.work, 4, regions=self.REGIONS)
+        self.assertEqual(len(m.filter_regions(cities, ["Metro Manila"])), 2)
+        self.assertEqual(len(m.filter_regions(cities, ["ncr", "davao"])), 3)
+        self.assertEqual(len(m.filter_regions(cities, ["ncr,central visayas"])), 3)
+        self.assertEqual(len(m.filter_regions(cities, ["Region VII (Central Visayas)"])), 1)   # parentheses are literal
+
+    def test_unknown_region_fails_fast_listing_choices(self):
+        seed_city_list(self.work, 4, regions=self.REGIONS)
+        with MockOpenMeteo() as mock:
+            rc = self.run_main(mock, "--region", "Atlantis")
+            self.assertEqual(mock.requests, [])
+        self.assertEqual(rc, 1)
+        log = (self.work / "run_log.txt").read_text(encoding="utf-8")
+        self.assertIn("Available regions", log)
+        self.assertIn("National Capital Region (NCR)", log)
+        self.assertFalse((self.out / "ph_heat_index_next_day.csv").exists())
+
+    def test_region_run_reuses_cache_from_a_full_run(self):
+        seed_city_list(self.work, 4, regions=self.REGIONS)
+        with MockOpenMeteo() as mock:
+            self.assertEqual(self.run_main(mock, "--max-cities", "4"), 0)
+        with MockOpenMeteo() as mock2:
+            self.assertEqual(self.run_main(mock2, "--region", "NCR"), 0)
+            self.assertEqual(mock2.requests, [])
+        self.assertEqual(pd.read_csv(self.out / "ph_heat_index_next_day.csv")["City"].nunique(), 2)
+
+    def test_region_with_max_cities_still_flags_subset(self):
+        seed_city_list(self.work, 4, regions=self.REGIONS)
+        with MockOpenMeteo() as mock:
+            self.assertEqual(self.run_main(mock, "--region", "NCR", "--max-cities", "1"), 0)
+        doc = (self.out / "dataset_documentation.md").read_text(encoding="utf-8")
+        self.assertIn("SUBSET build", doc)
+        self.assertIn("1 of 2 cities", doc)
 
     def test_no_keep_raw_flag(self):
         seed_city_list(self.work, 1)
