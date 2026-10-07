@@ -268,6 +268,47 @@ class RateBudgetTests(unittest.TestCase):
             b3 = m.RateBudget({"day": 100}, usage_path=path, clock=c.now, sleep=c.sleep)
             b3.acquire(30)                   # a day later: usage rolled off
 
+    def test_default_budgets_let_the_whole_ncr_job_run_without_an_hourly_pause(self):
+        """Regression: with a 4,500/h cap the 4,590-call NCR job stalled for ~51 min at chunk 172/176 in Colab."""
+        ref = pd.read_csv(ROOT / "reference" / "ph_city_list_base.csv", dtype={"city_id": str})
+        chunks = m.plan_chunks(m.filter_regions(ref, ["NCR"]), m.DEFAULT_START, m.DEFAULT_END)
+        total = sum(m.call_weight(c.n_days) for c in chunks) + 1.0                  # + the preflight call
+        self.assertEqual(len(chunks), 176)
+        self.assertLess(total, m.DEFAULT_BUDGETS["hour"])
+        self.assertLess(total, m.DEFAULT_BUDGETS["day"])
+        # replay the whole job through the budget with a fake clock: it must never sleep for an hour
+        c = FakeClock()
+        b = m.RateBudget(dict(m.DEFAULT_BUDGETS), clock=c.now, sleep=c.sleep)
+        b.acquire(1.0); b.record(1.0)
+        for ch in chunks:
+            b.acquire(m.call_weight(ch.n_days)); b.record(m.call_weight(ch.n_days))
+            c.t += 0.5                                                              # ~0.5 s per request
+        self.assertLess(max(c.slept, default=0), 100)                              # only brief per-minute pauses
+        self.assertFalse(any(x >= 3000 for x in c.slept))
+
+    def test_default_budgets_stay_below_the_server_limits(self):
+        for k, v in m.DEFAULT_BUDGETS.items():
+            self.assertLess(v, m.FREE_LIMITS[k])
+            self.assertGreater(v, 0.9 * m.FREE_LIMITS[k])                           # ... but not needlessly far below
+
+    def test_short_waits_are_quiet_and_long_waits_explain_themselves(self):
+        c, lines, seen = FakeClock(), [], []
+        b = m.RateBudget({"minute": 100}, clock=c.now, sleep=c.sleep, log=lines.append)
+        b.on_wait = lambda secs, why: seen.append((round(secs), why))
+        for _ in range(3):
+            b.acquire(30); b.record(30)
+        b.acquire(30)                                                                # ~60 s wait: routine
+        self.assertEqual(lines, [])
+        self.assertEqual(seen[0][1], "minute")
+        c2, lines2 = FakeClock(), []
+        b2 = m.RateBudget({"hour": 100}, clock=c2.now, sleep=c2.sleep, log=lines2.append)
+        for _ in range(3):
+            b2.acquire(30); b2.record(30)
+        b2.acquire(30)                                                               # ~1 h wait: must be explained
+        self.assertEqual(len(lines2), 1)
+        for needle in ("PAUSE", "not an error and not a hang", "--hour-budget 4900", "5,000"):
+            self.assertIn(needle, lines2[0])
+
     def test_call_weight_matches_open_meteo_formula(self):
         self.assertAlmostEqual(m.call_weight(365), 365 / 14, places=9)
         self.assertEqual(m.call_weight(3), 1.0)

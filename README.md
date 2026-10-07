@@ -34,6 +34,12 @@ python build_ph_heat_index_dataset.py --work-dir ph_heat_index_cache --out-dir o
 or open `ph_heat_index_colab.ipynb` in Colab (cache + outputs on Google Drive). Re-running resumes from the cache. In an
 environment with an outbound allow-list, allow `archive-api.open-meteo.com`, `pypi.org` and `files.pythonhosted.org`.
 
+**"PAUSE ... budget" in the output is not a hang.** The script caps its own API usage just under Open-Meteo's free limits
+(570/min, 4,900/h, 9,800/day weighted calls; server limits 600 / 5,000 / 10,000). The whole NCR job (~4,590 calls) fits inside one
+hourly window; if you ever hit a cap, the message says how long it waits and how to skip it (`--hour-budget 4900`). Progress
+is cached, so interrupting and re-running is always safe. (`api_usage_log.json` in the cache folder records recent calls;
+delete it only if you know the server quota has reset.)
+
 Useful flags: `--max-cities 3` (smoke test, labelled SUBSET), `--validate-only FILE.csv`, `--no-keep-raw`, `--model`
 (default `era5`), `--region` (default `NCR`; `all` exists but is outside this project's scope). `--help` lists the rest.
 

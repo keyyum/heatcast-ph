@@ -97,9 +97,11 @@ EXPECTED_UNITS = {
     "wind_gusts_10m": "km/h",
 }
 
-# Free-tier limits are 600/min, 5,000/hour, 10,000/day (weighted calls).
-# Client-side budgets stay below them. 0 / None disables a window.
-DEFAULT_BUDGETS = {"minute": 500.0, "hour": 4500.0, "day": 9500.0}
+# Open-Meteo free-tier limits (weighted calls). The client-side budgets sit just below them; a 429 from the
+# server is still handled (waits / graceful stop), so a small safety margin is enough. They must stay above
+# the cost of the whole NCR job (~4,590 calls) per window, otherwise the last chunks would pause for an hour.
+FREE_LIMITS = {"minute": 600, "hour": 5000, "day": 10000}
+DEFAULT_BUDGETS = {"minute": 570.0, "hour": 4900.0, "day": 9800.0}   # 0 / None disables a window
 
 # City list source: pinned PyPI wheel of the community PSGC package.
 PSGC_VERSION = "2026.4.13.0"
@@ -415,6 +417,7 @@ class RateBudget:
         self.log = log or (lambda m: None)
         self.clock = clock
         self.sleep = sleep or _sleep
+        self.on_wait = None  # optional callback(seconds, window_name) for a progress display
         self.events: deque = deque()
         if usage_path and usage_path.exists():
             try:
@@ -462,7 +465,14 @@ class RateBudget:
                     wait, why = free_in, name
             if wait <= 0:
                 return
-            self.log(f"  rate budget: waiting {wait + 1:.0f}s for the {why} window to free up")
+            if self.on_wait:
+                self.on_wait(wait + 1.0, why)
+            if wait > 60:  # short waits are routine and shown on the progress bar; long ones are explained
+                self.log(
+                    f"  PAUSE {fmt_duration(wait + 1)}: client-side {why} budget ({self.limits[why]:,.0f} weighted calls) is used up. "
+                    f"This is a self-imposed safety cap, not an error and not a hang; the server's free limit is "
+                    f"{FREE_LIMITS[why]:,} per {why}. To skip the pause, interrupt and re-run with "
+                    f"--{why}-budget {int(FREE_LIMITS[why] * 0.98)} (finished chunks are cached).")
             self.sleep(wait + 1.0)
 
     def record(self, weight: float) -> None:
@@ -769,6 +779,12 @@ def collect_chunks(chunks: list[Chunk], client: OpenMeteoClient, work_dir: Path,
     day_budget = client.budget.limits.get("day")
     log(f"Chunks: {len(chunks)} total | {n_cached} cached | {rebuilt} rebuilt from retained raw data | "
         f"{len(to_fetch)} to fetch (~{est_weight:,.0f} weighted API calls)")
+    hour_budget, minute_budget = client.budget.limits.get("hour"), client.budget.limits.get("minute")
+    if to_fetch and minute_budget:
+        log(f"  at the {minute_budget:,.0f}/min budget this takes at least ~{max(1, math.ceil(est_weight / minute_budget))} min")
+    if to_fetch and hour_budget and est_weight + 1 > hour_budget:
+        log(f"  NOTE: ~{est_weight:,.0f} weighted calls exceed the hourly budget ({hour_budget:,.0f}); the run will pause for the "
+            f"rest of the hour once it is used up (server limit {FREE_LIMITS['hour']:,}/h; raise --hour-budget to avoid this).")
     if day_budget and to_fetch:
         log(f"  client daily budget {day_budget:,.0f} calls -> about {math.ceil(est_weight / day_budget)} day(s) of runs on the free tier")
     if not to_fetch:
@@ -776,6 +792,7 @@ def collect_chunks(chunks: list[Chunk], client: OpenMeteoClient, work_dir: Path,
 
     bar = tqdm(total=len(to_fetch), unit="chunk", desc="Fetching", dynamic_ncols=True, mininterval=1.0) if tqdm else _NullBar()
     t0, fetched = time.time(), 0
+    client.budget.on_wait = lambda secs, why: bar.set_postfix_str(f"paused {secs:.0f}s: {why} budget")
     try:
         for ch in to_fetch:
             bar.set_postfix_str(f"{ch.city[:22]} {ch.start[:4]}")
@@ -798,6 +815,7 @@ def collect_chunks(chunks: list[Chunk], client: OpenMeteoClient, work_dir: Path,
                 rate = (time.time() - t0) / fetched
                 log(f"  {fetched}/{len(to_fetch)} chunks, ETA {fmt_duration(rate * (len(to_fetch) - fetched))}")
     finally:
+        client.budget.on_wait = None
         bar.close()
     return "complete", fetched
 
@@ -1228,7 +1246,7 @@ Files: `ph_heat_index_next_day.csv`, `ph_heat_index_data_dictionary.csv`, `ph_he
    any change to the aggregation can be re-applied without calling the API again (`--no-keep-raw` disables this).
 5. Retries with exponential backoff on network/5xx errors; `429` handling distinguishes minutely (wait ~65 s),
    hourly (wait for the next hour) and daily limits (stop gracefully, resume later). A persisted client-side budget
-   (500/min, 4,500/h, 9,500/day weighted calls) keeps the free tier from being exceeded.
+   ({DEFAULT_BUDGETS['minute']:,.0f}/min, {DEFAULT_BUDGETS['hour']:,.0f}/h, {DEFAULT_BUDGETS['day']:,.0f}/day weighted calls) keeps the free tier from being exceeded.
 6. Assemble all cached chunks, create targets, validate, write outputs.
 
 ## Heat index
