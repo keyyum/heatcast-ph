@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -54,12 +55,22 @@ DEFAULT_CSV = Path(__file__).resolve().parent / "data" / "ncr" / "output" / "ph_
 DEFAULT_OUT = Path(__file__).resolve().parent / "data" / "ncr" / "processed"
 
 WEATHER_FEATURES = list(U.DAILY_FEATURES)          # 16 daily summaries of the forecast day (incl. heat index)
-LAG_COLUMNS = U.lag_feature_names()                # 41 candidate past-only features
+# Day-to-day changes (EDA 3.4 asks to test them) for the variables that drive the heat index.
+DELTA_COLUMNS = ("Pressure_Mean", "Temp_Max", "DewPoint_Mean", "WindSpeed_Mean")
+LAG_COLUMNS = U.lag_feature_names(deltas=DELTA_COLUMNS)   # 44 candidate past-only features
 FEATURE_SETS = {
     "today": [],                                   # today's weather only: the simplest app input form
     "hi_lags": [f"HeatIndex_Max_Today_lag{k}" for k in U.DEFAULT_LAGS],   # + the heat index of the last 3 days
-    "all_lags": list(LAG_COLUMNS),                 # + every candidate lag / 3-day mean (research only)
+    "all_lags": list(LAG_COLUMNS),                 # + every candidate lag / 3-day mean / change (research only)
 }
+# The weather columns the EDA (workspace 3.6) keeps for Logistic Regression after removing collinear ones (all VIF < 6).
+# Humidity_Mean is optional there and is left out. The two tree models use the full set.
+PRUNED_WEATHER = ["HeatIndex_Max_Today", "Temp_Min", "SolarRadiation_Total", "WindSpeed_Mean", "Pressure_Mean",
+                  "CloudCover_Mean", "Rainfall_Total"]
+WEATHER_SETS = {"full": WEATHER_FEATURES, "lr_pruned": PRUNED_WEATHER}
+LOG_COLUMN_PREFIXES = ("Rainfall_Total", "WindSpeed_Mean")   # right-skewed (EDA 3.7); log1p also covers their lags
+LEVEL_CODE = "HeatLevelToday_Code"                 # ordinal 0..4 of today's heat level (optional input, see level_today)
+LEVEL_CODES = dict(zip(U.CLASS_ORDER, range(5)))
 STATIC_OPTIONS = ("city", "coords", "none")        # how a city is told to the model (see make_preprocessor)
 
 # The class policy is a group decision. "five_class" keeps every label exactly as built. "three_class" is
@@ -171,13 +182,26 @@ def class_weights(y, cap: float | None = None) -> dict[int, float]:
 # --------------------------------------------------------------------------- #
 # The shared transformer
 # --------------------------------------------------------------------------- #
-def feature_columns(feature_set: str = "today", static: str = "city") -> list[str]:
-    """Raw input columns a feature set needs (this is also the form the app has to collect)."""
+_LAG_SOURCE = re.compile(r"^(.*)_(?:lag\d+|mean\d+d|change1d)$")
+
+
+def feature_columns(feature_set: str = "today", static: str = "city", weather: str = "full",
+                    level_today: bool = False) -> list[str]:
+    """Raw input columns a feature set needs (this is also the form the app has to collect).
+
+    ``weather="lr_pruned"`` keeps only the weather columns of EDA section 3.6 (and the lags of those columns);
+    ``level_today=True`` adds ``HeatLevelToday_Code``, today's heat level as an ordinal 0..4 (EDA 3.4 keeps it; it is a
+    binning of ``HeatIndex_Max_Today``, so it adds little and is off by default).
+    """
     if feature_set not in FEATURE_SETS:
         raise ValueError(f"unknown feature set {feature_set!r}; choose from {sorted(FEATURE_SETS)}")
     if static not in STATIC_OPTIONS:
         raise ValueError(f"unknown static option {static!r}; choose from {STATIC_OPTIONS}")
-    cols = WEATHER_FEATURES + FEATURE_SETS[feature_set] + ["DayOfYear"]
+    if weather not in WEATHER_SETS:
+        raise ValueError(f"unknown weather set {weather!r}; choose from {sorted(WEATHER_SETS)}")
+    base = list(WEATHER_SETS[weather])
+    lags = [c for c in FEATURE_SETS[feature_set] if _LAG_SOURCE.match(c).group(1) in base]
+    cols = base + lags + ([LEVEL_CODE] if level_today else []) + ["DayOfYear"]
     cols += {"city": ["City"], "coords": ["Latitude", "Longitude", "Elevation"], "none": []}[static]
     U.assert_no_future_information(cols)
     return cols
@@ -196,26 +220,28 @@ def _day_of_year_names(_transformer, _input_features):
     return np.array(["DayOfYear_sin", "DayOfYear_cos"])
 
 
-def make_preprocessor(feature_set: str = "today", static: str = "city") -> ColumnTransformer:
+def make_preprocessor(feature_set: str = "today", static: str = "city", weather: str = "full",
+                      level_today: bool = False) -> ColumnTransformer:
     """The one transformer all three models use. It learns its statistics only when ``fit`` is called, so put it
     in a ``Pipeline`` and every cross-validation fold re-fits it on that fold's training rows.
 
     * numeric weather and lag columns: median imputation (a safety net, the data has no gaps) then standard scaling;
-    * rainfall columns: ``log1p`` first, because daily rainfall is extremely right-skewed (skewness about 5);
+    * rainfall and mean wind speed columns: ``log1p`` first, because both are right-skewed (EDA 3.7). The tree models are
+      unaffected by a monotone transform, so one pipeline serves all three algorithms;
     * ``DayOfYear``: two cyclic columns (sin, cos) so that 31 December sits next to 1 January;
     * ``static``: ``"city"`` one-hot encodes the city (16 columns, it carries the same information as latitude,
       longitude and elevation); ``"coords"`` uses the three numbers instead; ``"none"`` leaves the city out;
     * ``Month`` is not used (``DayOfYear`` carries it); ``Date`` and the targets are never inputs.
     """
-    feature_columns(feature_set, static)          # validates the names and the no-future-information guard
-    numeric = WEATHER_FEATURES + FEATURE_SETS[feature_set]
-    rain = [c for c in numeric if c.startswith("Rainfall_Total")]
-    plain = [c for c in numeric if c not in rain]
+    cols = feature_columns(feature_set, static, weather, level_today)
+    numeric = [c for c in cols if c not in ("DayOfYear", "City", "Latitude", "Longitude", "Elevation")]
+    logged = [c for c in numeric if c.startswith(LOG_COLUMN_PREFIXES)]
+    plain = [c for c in numeric if c not in logged]
     parts = [
         ("numeric", Pipeline([("impute", SimpleImputer(strategy="median")), ("scale", StandardScaler())]), plain),
-        ("rain", Pipeline([("impute", SimpleImputer(strategy="median")),
-                           ("log", FunctionTransformer(_log1p_nonneg, feature_names_out="one-to-one")),
-                           ("scale", StandardScaler())]), rain),
+        ("logged", Pipeline([("impute", SimpleImputer(strategy="median")),
+                             ("log", FunctionTransformer(_log1p_nonneg, feature_names_out="one-to-one")),
+                             ("scale", StandardScaler())]), logged),
         ("season", FunctionTransformer(_day_of_year_cycle, feature_names_out=_day_of_year_names), ["DayOfYear"]),
     ]
     if static == "city":
@@ -241,13 +267,15 @@ class Prepared:
     target_policy: str
     quality: dict
     counts: dict = field(default_factory=dict)
+    facts: dict = field(default_factory=dict)
 
     @property
     def class_labels(self) -> list[str]:
         return POLICY_LABELS[self.target_policy]
 
-    def X(self, frame: pd.DataFrame, feature_set: str = "today", static: str = "city") -> pd.DataFrame:
-        cols = feature_columns(feature_set, static)
+    def X(self, frame: pd.DataFrame, feature_set: str = "today", static: str = "city", weather: str = "full",
+          level_today: bool = False) -> pd.DataFrame:
+        cols = feature_columns(feature_set, static, weather, level_today)
         out = frame[cols].copy()
         if "City" in out:
             out["City"] = out["City"].astype(object)
@@ -278,11 +306,11 @@ def prepare_dataset(source, test_fraction: float = TEST_FRACTION, gap_days: int 
     dates = np.sort(df["Date"].unique())
     test_start = pd.Timestamp(dates[int(round(len(dates) * (1 - test_fraction)))])
 
-    lagged = U.add_lag_features(df)
+    lagged = U.add_lag_features(df, deltas=DELTA_COLUMNS)
     n_before = len(lagged)
     lagged = lagged.dropna(subset=LAG_COLUMNS)            # each city's first 3 days have no full history
     dropped_lag_rows = n_before - len(lagged)
-    lagged = lagged.drop(columns=["HeatLevelToday"])      # a binning of HeatIndex_Max_Today: redundant
+    lagged[LEVEL_CODE] = lagged["HeatLevelToday"].map(LEVEL_CODES).astype(int)
     lagged = lagged.sort_values(["Date", "City"], kind="mergesort").reset_index(drop=True)
 
     train_idx, test_idx = U.chronological_split(lagged, test_start, embargo_days=gap_days)
@@ -292,7 +320,11 @@ def prepare_dataset(source, test_fraction: float = TEST_FRACTION, gap_days: int 
     encode_target(lagged[U.TARGET], target_policy)        # fail early on an unknown policy or label
     counts = {"rows_in": n_before, "dropped_for_lag_history": dropped_lag_rows,
               "gap_rows": len(lagged) - len(train) - len(test), "train": len(train), "test": len(test)}
-    return Prepared(train, test, cv, test_start, gap_days, target_policy, quality, counts)
+    nh = lagged.loc[lagged[U.TARGET] == "Not Hazardous", "Date"]
+    facts = {"not_hazardous_days": int(nh.nunique()),
+             # the label is tomorrow's level, so the heat day itself is one day after the forecast date
+             "last_not_hazardous_day": (nh.max() + pd.Timedelta(days=1)).date().isoformat() if len(nh) else None}
+    return Prepared(train, test, cv, test_start, gap_days, target_policy, quality, counts, facts)
 
 
 # --------------------------------------------------------------------------- #
@@ -405,6 +437,9 @@ def split_definition(prep: Prepared) -> dict:
                                    prep.train.iloc[va]["Date"].max().date().isoformat()],
                    "train_rows": int(len(tr)), "valid_rows": int(len(va))} for i, (tr, va) in enumerate(prep.cv_splits, 1)],
         "feature_sets": {k: feature_columns(k, "city") for k in FEATURE_SETS},
+        "weather_sets": {k: list(v) for k, v in WEATHER_SETS.items()},
+        "level_today_column": LEVEL_CODE,
+        "log1p_column_prefixes": list(LOG_COLUMN_PREFIXES),
         "static_options": list(STATIC_OPTIONS),
         "class_weights_balanced_train": {labels[k]: round(v, 3) for k, v in prep.class_weights().items()},
     }
@@ -425,9 +460,13 @@ def render_report(prep: Prepared) -> str:
     c = prep.counts
     d = lambda ts: ts.date().isoformat()  # noqa: E731
 
-    n_pre = len(make_preprocessor("today").fit(prep.X(tr, "today")).get_feature_names_out())
-    n_hi = len(make_preprocessor("hi_lags").fit(prep.X(tr, "hi_lags")).get_feature_names_out())
-    n_all = len(make_preprocessor("all_lags").fit(prep.X(tr, "all_lags")).get_feature_names_out())
+    def n_cols(feature_set, **kw):
+        return len(make_preprocessor(feature_set, **kw).fit(prep.X(tr, feature_set, **kw)).get_feature_names_out())
+
+    n_pre, n_hi, n_all = n_cols("today"), n_cols("hi_lags"), n_cols("all_lags")
+    n_pruned, n_level = n_cols("today", weather="lr_pruned"), n_cols("today", level_today=True)
+    skew = lambda col: (float(tr[col].skew()), float(np.log1p(tr[col]).skew()))  # noqa: E731
+    rain_skew, wind_skew = skew("Rainfall_Total"), skew("WindSpeed_Mean")
 
     L = []
     L.append("# HeatCast NCR - data preparation and preprocessing (project Section 4)\n")
@@ -444,15 +483,18 @@ def render_report(prep: Prepared) -> str:
                                         f"order violations, {q['label_mismatch_today'] + q['label_mismatch_tomorrow'] + q['tomorrow_shift_mismatch']} label or next-day mismatches. "
                                         "No action needed.",
          "Checked by `data_quality_checks`; the pipeline stops if any check fails."),
-        ("Outliers", "Kept. No value is an error: the extremes come in storm spells, not as isolated spikes (evidence below). Rainfall is log-transformed.",
+        ("Outliers", "Kept. No value is an error: the extremes come in storm spells, not as isolated spikes (evidence below). Rainfall and mean wind speed are log-transformed.",
          "Dropping extremes would remove real weather the models must handle."),
-        ("Encoding", "City one-hot (16 columns) by default; DayOfYear as sin/cos; Month, Date and the targets are not inputs. "
+        ("Encoding", "City one-hot (16 columns) by default; DayOfYear as sin/cos (Month and raw DayOfYear are not inputs, as in EDA 3.5); Date and the targets are not inputs. "
                      "Class labels get fixed integer codes.", "One-hot city equals latitude + longitude + elevation. Cyclic season avoids a jump from Dec 31 to Jan 1."),
-        ("Scaling", "Standard scaling of all numeric columns, fitted on training rows only. Same transformer for all three models.",
-         "Needed by Logistic Regression; harmless for the trees. The course asks for identical preprocessing."),
+        ("Scaling", "log1p of Rainfall_Total and WindSpeed_Mean (and their lags), then standard scaling of all numeric columns, fitted on training rows only. "
+                    "Same transformer for all three models.",
+         "Needed by Logistic Regression; a monotone transform and scaling do not change a tree model. The course asks for identical preprocessing."),
         ("Feature selection / engineering", f"Three named feature sets: `today` ({n_pre} columns), `hi_lags` ({n_hi}), `all_lags` ({n_all}). "
-                                            "No correlated feature is removed. The set is chosen once, by cross-validation on the training rows, and used by all models.",
-         "Lags are past-only. Heat-index lags carry signal beyond today's value (screening below)."),
+                                            f"Two options from the EDA: `weather='lr_pruned'` (the 7 weather columns of EDA 3.6, {n_pruned} columns with `today`) and "
+                                            f"`level_today=True` (adds today's heat level as a 0-4 code, {n_level} columns with `today`). "
+                                            "No correlated feature is removed from the full set. The set is chosen by cross-validation on the training rows.",
+         "Lags are past-only. Heat-index lags carry signal beyond today's value (screening below). Collinearity matters for Logistic Regression only."),
         ("Class imbalance", f"Balanced class weights computed from training labels. No resampling. No class merged or dropped (group decision, see below).",
          "Resampling would copy near-identical rows (16 cities share weather) and cannot invent the missing class."),
         ("Leakage prevention", "Split by date, gap between train and test and between folds, transformer fitted inside each training fold, "
@@ -502,15 +544,16 @@ def render_report(prep: Prepared) -> str:
              f"not sensor glitches: {st['rain_spell']} of the {st['n']} rainiest training days have at least 10 mm of rain on a neighbouring day "
              f"(the typical day's highest city value is {st['rain_typical']:.1f} mm), and every one of the {st['n']} windiest days has gusts of "
              f"at least {st['gust_min_neighbour']:.0f} km/h on a neighbouring day (typical: {st['gust_typical']:.0f} km/h). "
-             f"Rainfall (skewness {out_t.loc['Rainfall_Total', 'skewness']:.1f}) is log-transformed; the tree models are not affected by that.\n")
+             f"After log1p the skewness of Rainfall_Total falls from {rain_skew[0]:.2f} to {rain_skew[1]:.2f} and that of WindSpeed_Mean from "
+             f"{wind_skew[0]:.2f} to {wind_skew[1]:.2f} (training rows); the tree models are not affected by the transform.\n")
     L.append("## 4. Feature engineering and selection\n")
-    L.append(f"- Candidate lag features: {len(LAG_COLUMNS)} (1-3 day lags and a 3-day mean of ten weather variables, plus the 1-day pressure change). "
-             "Computed within each city, strictly from earlier days.")
+    L.append(f"- Candidate lag features: {len(LAG_COLUMNS)} (1-3 day lags and a 3-day mean of ten weather variables, plus 1-day changes of "
+             f"{', '.join(DELTA_COLUMNS)}). Computed within each city, strictly from earlier days.")
     L.append(f"- Linear screening on the training rows: {len(useful)} of {len(lag)} lag features have |partial correlation| >= 0.05 with tomorrow's heat index "
              "after removing today's heat index and the season. The strongest:\n")
     L.append(_md(lag.head(10), fmt="{:,.3f}"))
     L.append("\n- `today` uses no history, so the app only needs today's weather. `hi_lags` adds the heat index of the previous 3 days "
-             "(three extra numbers for the app). `all_lags` is for research: an app cannot ask a user for 41 extra numbers.")
+             f"(three extra numbers for the app). `all_lags` is for research: an app cannot ask a user for {len(LAG_COLUMNS)} extra numbers.")
     if len(corr):
         L.append("\nPairs of weather features with |r| >= 0.9 on the training rows (kept; Logistic Regression is regularised and trees do not mind):\n")
         L.append(_md(corr, fmt="{:,.3f}"))
@@ -524,7 +567,27 @@ def render_report(prep: Prepared) -> str:
              "a large weight; scores must be computed over the classes that occur.")
     L.append("2. **Three classes** (`target_policy='three_class'`): Caution or below / Extreme Caution / Danger or above. This merges the two "
              "rare classes into their neighbours. It is implemented but **not applied** until the group agrees.\n")
-    L.append("## 6. Leakage prevention\n")
+    L.append("## 6. How this follows the EDA decisions (workspace Section 3)\n")
+    nh_days, nh_last = prep.facts["not_hazardous_days"], prep.facts["last_not_hazardous_day"]
+    L.append(_md(pd.DataFrame([
+        ("Drop `HeatIndex_Max_Tomorrow` (3.1)", "Done. Never an input; kept in the data only for diagnostics."),
+        ("Cyclic season, drop raw `DayOfYear` (3.5)", "Done with `DayOfYear` as sin/cos. `Month` and raw `DayOfYear` are not inputs (they carry the same information)."),
+        ("log1p of `Rainfall_Total` and `WindSpeed_Mean` (3.7)", "Done for all three models, because the course asks for one shared preprocessing and trees ignore a monotone transform."),
+        ("Pruned weather set for Logistic Regression, full set for the trees (3.6)", "Available as `weather='lr_pruned'` (7 columns); the default is the full set."),
+        ("Keep `HeatLevelToday`, ordinal (3.4)", f"Available as `level_today=True` (`{LEVEL_CODE}`, 0-4). Off by default: it is a binning of `HeatIndex_Max_Today` and is not in the "
+                                                  "specified feature list. **Open: the group decides.**"),
+        ("Class weights, no heavy resampling (3.2)", "Done: `class_weights` from training labels, no resampling."),
+        ("Also test merging Not Hazardous with Caution (3.2)", "Available as `target_policy='three_class'` (Caution or below / Extreme Caution / Danger or above). Not applied."),
+        ("Day-to-day differences (3.4)", f"Added as candidate features: 1-day changes of {', '.join(DELTA_COLUMNS)} (part of `all_lags`)."),
+        ("Distance to the 33 and 42 degree cut-offs (3.3)", "Not added: each is `HeatIndex_Max_Today` minus a constant, so it carries no new information for a linear or a tree model. "
+                                                          "An absolute distance could be tested later."),
+        ("Chronological split, e.g. 2015-2022 / 2023-2024 / 2025 (3.8)", "Section 4 uses the course default instead: 80 / 20 by date, with 5 time-aware folds inside the training period as the validation. "
+                                                                          "That example split is not used."),
+    ], columns=["EDA decision", "In the preprocessing"]), index=False))
+    L.append("")
+    L.append(f"- Section 3.2 says chronological splits keep every class in each part. That cannot hold: Not Hazardous occurs on {nh_days} days in total and "
+             f"the last such day is {nh_last}, so no test period that ends in 2025 contains it, and Extreme Danger never occurs.")
+    L.append("\n## 7. Leakage prevention\n")
     L.extend([
         "1. The split is by calendar date and never by row (the CSV is sorted by city, so a row split would split by city).",
         f"2. A {prep.gap_days}-day gap separates training from the test period and each validation block from the days before it.",

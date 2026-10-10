@@ -142,8 +142,8 @@ class LagFeatures(unittest.TestCase):
     def test_lags_use_only_earlier_days(self):
         full = make_frame()
         cutoff = full["Date"].min() + pd.Timedelta(days=300)
-        a = U.add_lag_features(full)
-        b = U.add_lag_features(full[full["Date"] <= cutoff])
+        a = U.add_lag_features(full, deltas=P.DELTA_COLUMNS)
+        b = U.add_lag_features(full[full["Date"] <= cutoff], deltas=P.DELTA_COLUMNS)
         a = a[a["Date"] <= cutoff].reset_index(drop=True)
         pd.testing.assert_frame_equal(a[P.LAG_COLUMNS], b.reset_index(drop=True)[P.LAG_COLUMNS])
 
@@ -166,7 +166,8 @@ class SharedTransformer(unittest.TestCase):
     def test_feature_sets_and_guard(self):
         self.assertEqual(len(P.feature_columns("today", "city")), 16 + 1 + 1)
         self.assertEqual(len(P.feature_columns("hi_lags", "coords")), 16 + 3 + 1 + 3)
-        self.assertEqual(len(P.feature_columns("all_lags", "none")), 16 + 41 + 1)
+        self.assertEqual(len(P.feature_columns("all_lags", "none")), 16 + len(P.LAG_COLUMNS) + 1)
+        self.assertEqual(len(P.LAG_COLUMNS), 44)
         for cols in (P.feature_columns(s, "city") for s in P.FEATURE_SETS):
             self.assertFalse(set(cols) & {"HeatLevelTomorrow", "HeatIndex_Max_Tomorrow", "HeatLevelToday", "Date", "Month"})
         with self.assertRaises(ValueError):
@@ -209,6 +210,44 @@ class SharedTransformer(unittest.TestCase):
         X = prep.X(prep.train, "today")
         out = P.make_preprocessor("today").fit_transform(X)
         self.assertLess(abs(out["Rainfall_Total"].skew()), abs(X["Rainfall_Total"].skew()))
+
+    def test_pruned_weather_follows_the_eda_list_and_keeps_only_its_lags(self):
+        cols = P.feature_columns("all_lags", "none", weather="lr_pruned")
+        self.assertEqual(cols[:7], P.PRUNED_WEATHER)
+        self.assertNotIn("DewPoint_Mean_lag1", cols)                      # a dropped variable's lags are dropped too
+        self.assertIn("HeatIndex_Max_Today_lag3", cols)
+        self.assertIn("Temp_Min", cols)
+        self.assertNotIn("Temp_Max_lag2", cols)
+        self.assertEqual(len(P.feature_columns("today", "city", weather="lr_pruned")), 7 + 1 + 1)
+        prep = prepared()
+        out = P.make_preprocessor("today", "none", weather="lr_pruned").fit_transform(
+            prep.X(prep.train, "today", "none", weather="lr_pruned"))
+        self.assertEqual(out.shape[1], 7 + 2)
+
+    def test_level_today_is_off_by_default_and_ordinal_when_asked(self):
+        self.assertNotIn(P.LEVEL_CODE, P.feature_columns("today"))
+        self.assertIn(P.LEVEL_CODE, P.feature_columns("today", level_today=True))
+        prep = prepared()
+        mapped = prep.train["HeatLevelToday"].map(P.LEVEL_CODES)
+        self.assertTrue((prep.train[P.LEVEL_CODE] == mapped).all())
+        out = P.make_preprocessor("today", level_today=True).fit_transform(prep.X(prep.train, "today", level_today=True))
+        self.assertIn(P.LEVEL_CODE, out.columns)
+
+    def test_log_applies_to_rain_and_mean_wind_but_not_to_other_columns(self):
+        prep = prepared()
+        X = prep.X(prep.train, "all_lags")
+        out = P.make_preprocessor("all_lags").fit_transform(X)
+        for col in ("Rainfall_Total", "WindSpeed_Mean", "Rainfall_Total_lag1", "WindSpeed_Mean_mean3d"):
+            z = (np.log1p(X[col]) - np.log1p(X[col]).mean()) / np.log1p(X[col]).std(ddof=0)
+            np.testing.assert_allclose(out[col].to_numpy(), z.to_numpy(), atol=1e-9)
+        z = (X["Temp_Max"] - X["Temp_Max"].mean()) / X["Temp_Max"].std(ddof=0)       # a plain column is only scaled
+        np.testing.assert_allclose(out["Temp_Max"].to_numpy(), z.to_numpy(), atol=1e-9)
+
+    def test_day_to_day_changes_are_past_only_differences(self):
+        prep = prepared()
+        row = prep.train.iloc[300]
+        y = prep.train[(prep.train["City"] == row["City"]) & (prep.train["Date"] == row["Date"] - pd.Timedelta(days=1))]
+        self.assertAlmostEqual(row["Temp_Max_change1d"], row["Temp_Max"] - y["Temp_Max"].iloc[0], places=9)
 
     def test_cyclic_season_joins_december_and_january(self):
         x = pd.DataFrame({"DayOfYear": [1, 365]})
@@ -284,6 +323,8 @@ class RealData(unittest.TestCase):
         self.assertEqual(p.train["Date"].min(), pd.Timestamp("2015-01-04"))
         self.assertEqual(p.train["Date"].max(), pd.Timestamp("2023-10-13"))
         self.assertEqual(p.counts, {"rows_in": 64240, "dropped_for_lag_history": 48, "gap_rows": 64, "train": 51280, "test": 12848})
+        self.assertEqual(p.facts["not_hazardous_days"], 16)
+        self.assertLess(pd.Timestamp(p.facts["last_not_hazardous_day"]), p.test_start)       # no Not Hazardous day in the test period
         self.assertEqual([len(v) for _, v in p.cv_splits], [7904] * 5)
 
     def test_documented_class_counts(self):
@@ -315,7 +356,8 @@ class RealData(unittest.TestCase):
     def test_report_makes_no_claim_that_a_class_was_changed(self):
         text = P.render_report(self.prep)
         self.assertIn("No class merged or dropped", text)
-        self.assertIn("not applied", text)
+        self.assertIn("not applied", text.lower())
+        self.assertIn("Open: the group decides", text)
 
 
 if __name__ == "__main__":

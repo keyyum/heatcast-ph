@@ -103,10 +103,12 @@ model = Pipeline([("prep", P.make_preprocessor("hi_lags")), ("clf", YourModel(ra
 * **Split:** 80 / 20 of the calendar dates. Test 2023-10-18 to 2025-12-28; train 2015-01-04 to 2023-10-13; a 4-day gap
   (3 days of lag + 1 day of horizon) between them and before every validation block; 5 expanding-window folds; random state 42.
 * **Checks:** no missing values, duplicates, impossible values or label mismatches in the committed data. Each city's first 3 days
-  (no lag history) are dropped. Outliers are real storm days and are kept; rainfall is log-transformed.
+  (no lag history) are dropped. Outliers are real storm days and are kept; rainfall and mean wind speed are log-transformed.
 * **Transformer:** standard scaling, `DayOfYear` as sin/cos, one-hot `City` (or `static="coords"` / `"none"`), fitted on training rows only.
-* **Feature sets:** `today` (today's weather), `hi_lags` (+ heat index of the previous 3 days), `all_lags` (+ 41 candidate lags). The
-  set is chosen once by cross-validation on the training rows and used by every model.
+* **Feature sets:** `today` (today's weather), `hi_lags` (+ heat index of the previous 3 days), `all_lags` (+ 44 candidate lags and
+  day-to-day changes). The set is chosen by cross-validation on the training rows. Two options follow the EDA (workspace Section 3):
+  `weather="lr_pruned"` (the 7 weather columns kept for Logistic Regression) and `level_today=True` (adds today's heat level as a 0-4 code;
+  off by default, the group decides).
 * **Classes:** nothing is merged or dropped. Extreme Danger has no rows and Not Hazardous has 158 training rows (none in the test
   period); `class_weights` gives balanced weights from training labels, and `target_policy="three_class"` exists as an option that
   is **not applied** until the group decides.

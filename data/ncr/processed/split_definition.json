@@ -198,10 +198,47 @@
       "SolarRadiation_Total_mean3d",
       "WindSpeed_Mean_mean3d",
       "Pressure_Mean_change1d",
+      "Temp_Max_change1d",
+      "DewPoint_Mean_change1d",
+      "WindSpeed_Mean_change1d",
       "DayOfYear",
       "City"
     ]
   },
+  "weather_sets": {
+    "full": [
+      "Temp_Min",
+      "Temp_Mean",
+      "Temp_Max",
+      "Humidity_Min",
+      "Humidity_Mean",
+      "Humidity_Max",
+      "DewPoint_Mean",
+      "Pressure_Mean",
+      "CloudCover_Mean",
+      "WindSpeed_Mean",
+      "WindSpeed_Max",
+      "WindGust_Max",
+      "Rainfall_Total",
+      "RainHours",
+      "SolarRadiation_Total",
+      "HeatIndex_Max_Today"
+    ],
+    "lr_pruned": [
+      "HeatIndex_Max_Today",
+      "Temp_Min",
+      "SolarRadiation_Total",
+      "WindSpeed_Mean",
+      "Pressure_Mean",
+      "CloudCover_Mean",
+      "Rainfall_Total"
+    ]
+  },
+  "level_today_column": "HeatLevelToday_Code",
+  "log1p_column_prefixes": [
+    "Rainfall_Total",
+    "WindSpeed_Mean"
+  ],
   "static_options": [
     "city",
     "coords",
