@@ -2,5 +2,6 @@ requests>=2.28
 pandas>=2.0
 numpy>=1.24
 tqdm>=4.60
+scikit-learn>=1.2      # preprocessing pipeline (ncr_preprocessing.py) and, later, the three models
 # optional, only for the heat-index cross-check test:
 # metpy

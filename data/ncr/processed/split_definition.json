@@ -1,0 +1,216 @@
+{
+  "random_state": 42,
+  "target": "HeatLevelTomorrow",
+  "target_policy": "five_class",
+  "class_labels": [
+    "Not Hazardous",
+    "Caution",
+    "Extreme Caution",
+    "Danger",
+    "Extreme Danger"
+  ],
+  "test_fraction": 0.2,
+  "test_start": "2023-10-18",
+  "gap_days": 4,
+  "n_splits": 5,
+  "min_train_days": 730,
+  "train_dates": [
+    "2015-01-04",
+    "2023-10-13"
+  ],
+  "test_dates": [
+    "2023-10-18",
+    "2025-12-28"
+  ],
+  "rows": {
+    "rows_in": 64240,
+    "dropped_for_lag_history": 48,
+    "gap_rows": 64,
+    "train": 51280,
+    "test": 12848
+  },
+  "folds": [
+    {
+      "fold": 1,
+      "train_dates": [
+        "2015-01-04",
+        "2017-01-03"
+      ],
+      "valid_dates": [
+        "2017-01-08",
+        "2018-05-16"
+      ],
+      "train_rows": 11696,
+      "valid_rows": 7904
+    },
+    {
+      "fold": 2,
+      "train_dates": [
+        "2015-01-04",
+        "2018-05-12"
+      ],
+      "valid_dates": [
+        "2018-05-17",
+        "2019-09-22"
+      ],
+      "train_rows": 19600,
+      "valid_rows": 7904
+    },
+    {
+      "fold": 3,
+      "train_dates": [
+        "2015-01-04",
+        "2019-09-18"
+      ],
+      "valid_dates": [
+        "2019-09-23",
+        "2021-01-28"
+      ],
+      "train_rows": 27504,
+      "valid_rows": 7904
+    },
+    {
+      "fold": 4,
+      "train_dates": [
+        "2015-01-04",
+        "2021-01-24"
+      ],
+      "valid_dates": [
+        "2021-01-29",
+        "2022-06-06"
+      ],
+      "train_rows": 35408,
+      "valid_rows": 7904
+    },
+    {
+      "fold": 5,
+      "train_dates": [
+        "2015-01-04",
+        "2022-06-02"
+      ],
+      "valid_dates": [
+        "2022-06-07",
+        "2023-10-13"
+      ],
+      "train_rows": 43312,
+      "valid_rows": 7904
+    }
+  ],
+  "feature_sets": {
+    "today": [
+      "Temp_Min",
+      "Temp_Mean",
+      "Temp_Max",
+      "Humidity_Min",
+      "Humidity_Mean",
+      "Humidity_Max",
+      "DewPoint_Mean",
+      "Pressure_Mean",
+      "CloudCover_Mean",
+      "WindSpeed_Mean",
+      "WindSpeed_Max",
+      "WindGust_Max",
+      "Rainfall_Total",
+      "RainHours",
+      "SolarRadiation_Total",
+      "HeatIndex_Max_Today",
+      "DayOfYear",
+      "City"
+    ],
+    "hi_lags": [
+      "Temp_Min",
+      "Temp_Mean",
+      "Temp_Max",
+      "Humidity_Min",
+      "Humidity_Mean",
+      "Humidity_Max",
+      "DewPoint_Mean",
+      "Pressure_Mean",
+      "CloudCover_Mean",
+      "WindSpeed_Mean",
+      "WindSpeed_Max",
+      "WindGust_Max",
+      "Rainfall_Total",
+      "RainHours",
+      "SolarRadiation_Total",
+      "HeatIndex_Max_Today",
+      "HeatIndex_Max_Today_lag1",
+      "HeatIndex_Max_Today_lag2",
+      "HeatIndex_Max_Today_lag3",
+      "DayOfYear",
+      "City"
+    ],
+    "all_lags": [
+      "Temp_Min",
+      "Temp_Mean",
+      "Temp_Max",
+      "Humidity_Min",
+      "Humidity_Mean",
+      "Humidity_Max",
+      "DewPoint_Mean",
+      "Pressure_Mean",
+      "CloudCover_Mean",
+      "WindSpeed_Mean",
+      "WindSpeed_Max",
+      "WindGust_Max",
+      "Rainfall_Total",
+      "RainHours",
+      "SolarRadiation_Total",
+      "HeatIndex_Max_Today",
+      "HeatIndex_Max_Today_lag1",
+      "HeatIndex_Max_Today_lag2",
+      "HeatIndex_Max_Today_lag3",
+      "Temp_Max_lag1",
+      "Temp_Max_lag2",
+      "Temp_Max_lag3",
+      "Humidity_Mean_lag1",
+      "Humidity_Mean_lag2",
+      "Humidity_Mean_lag3",
+      "DewPoint_Mean_lag1",
+      "DewPoint_Mean_lag2",
+      "DewPoint_Mean_lag3",
+      "Pressure_Mean_lag1",
+      "Pressure_Mean_lag2",
+      "Pressure_Mean_lag3",
+      "CloudCover_Mean_lag1",
+      "CloudCover_Mean_lag2",
+      "CloudCover_Mean_lag3",
+      "Rainfall_Total_lag1",
+      "Rainfall_Total_lag2",
+      "Rainfall_Total_lag3",
+      "RainHours_lag1",
+      "RainHours_lag2",
+      "RainHours_lag3",
+      "SolarRadiation_Total_lag1",
+      "SolarRadiation_Total_lag2",
+      "SolarRadiation_Total_lag3",
+      "WindSpeed_Mean_lag1",
+      "WindSpeed_Mean_lag2",
+      "WindSpeed_Mean_lag3",
+      "HeatIndex_Max_Today_mean3d",
+      "Temp_Max_mean3d",
+      "Humidity_Mean_mean3d",
+      "DewPoint_Mean_mean3d",
+      "Pressure_Mean_mean3d",
+      "CloudCover_Mean_mean3d",
+      "Rainfall_Total_mean3d",
+      "RainHours_mean3d",
+      "SolarRadiation_Total_mean3d",
+      "WindSpeed_Mean_mean3d",
+      "Pressure_Mean_change1d",
+      "DayOfYear",
+      "City"
+    ]
+  },
+  "static_options": [
+    "city",
+    "coords",
+    "none"
+  ],
+  "class_weights_balanced_train": {
+    "Not Hazardous": 81.139,
+    "Caution": 1.787,
+    "Extreme Caution": 0.321,
+    "Danger": 3.162
+  }
+}

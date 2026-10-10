@@ -83,6 +83,34 @@ Generated automatically after the dataset passes validation; also runnable alone
 * `INPUT_FEATURES` is the specified 22-column feature list; `assert_no_future_information(cols)` rejects
   `HeatIndex_Max_Tomorrow`, `HeatLevelTomorrow` and anything that looks like tomorrow.
 
+## Preprocessing (`ncr_preprocessing.py`, project Section 4)
+
+One shared, leak-safe preprocessing for all three models. No model is trained here. `python ncr_preprocessing.py` checks the data and
+writes `data/ncr/processed/`: `preprocessing_report.md` (every decision with its evidence), `split_definition.json` and
+`ncr_model_ready.csv.gz` (the checked data plus the lag features, with a `Split` column; read it with `pd.read_csv`).
+
+```python
+import ncr_preprocessing as P
+from sklearn.pipeline import Pipeline
+
+prep = P.prepare_dataset("data/ncr/output/ph_heat_index_next_day.csv")     # checks, lags, date split, 5 time-aware folds
+X, y = prep.X(prep.train, "hi_lags"), prep.y(prep.train)                   # raw feature frame and integer class codes
+model = Pipeline([("prep", P.make_preprocessor("hi_lags")), ("clf", YourModel(random_state=P.RANDOM_STATE))])
+# cross_validate(model, X, y, cv=prep.cv_splits, scoring=...)  # the transformer is re-fitted inside every training fold
+# prep.test is the final test set: leave it alone until the selected model is evaluated once.
+```
+
+* **Split:** 80 / 20 of the calendar dates. Test 2023-10-18 to 2025-12-28; train 2015-01-04 to 2023-10-13; a 4-day gap
+  (3 days of lag + 1 day of horizon) between them and before every validation block; 5 expanding-window folds; random state 42.
+* **Checks:** no missing values, duplicates, impossible values or label mismatches in the committed data. Each city's first 3 days
+  (no lag history) are dropped. Outliers are real storm days and are kept; rainfall is log-transformed.
+* **Transformer:** standard scaling, `DayOfYear` as sin/cos, one-hot `City` (or `static="coords"` / `"none"`), fitted on training rows only.
+* **Feature sets:** `today` (today's weather), `hi_lags` (+ heat index of the previous 3 days), `all_lags` (+ 41 candidate lags). The
+  set is chosen once by cross-validation on the training rows and used by every model.
+* **Classes:** nothing is merged or dropped. Extreme Danger has no rows and Not Hazardous has 158 training rows (none in the test
+  period); `class_weights` gives balanced weights from training labels, and `target_policy="three_class"` exists as an option that
+  is **not applied** until the group decides.
+
 ## Key decisions
 
 - **Class rule:** `HeatIndex_Max_Tomorrow` is the next day's maximum *hourly* heat index (NWS/Rothfusz on hourly temperature and
@@ -115,8 +143,9 @@ short arrays, wrong timezone, quota) and a lapse-rate elevation effect. The anal
 build_ph_heat_index_dataset.py   dataset pipeline (fetch, cache, aggregate, targets, validate, documentation)
 ncr_dataset_analysis.py          pre-modelling analysis (no models trained)
 ncr_modeling_utils.py            date-based splits, past-only lag features, future-information guard
+ncr_preprocessing.py             shared preprocessing: data checks, split, folds, transformer, class weights (no models)
 ph_heat_index_colab.ipynb        Colab runner (Drive-backed cache)
-data/ncr/                        the real NCR build: output/ (5 files), cache/ (raw responses + chunks), README.md
+data/ncr/                        the real NCR build: output/ (5 files), cache/ (raw responses + chunks), processed/ (Section 4), README.md
 reference/ph_city_list_base.csv  the 149-city PSGC list before the NCR filter and API enrichment
 tests/                           unit + end-to-end tests and the mock API
 ```
