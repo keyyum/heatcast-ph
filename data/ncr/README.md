@@ -15,6 +15,12 @@ coordinates, not station observations and not 16 independent weather stations.**
 | `cache/raw/` | the 176 raw hourly API responses (gzip JSON), exactly what Open-Meteo returned |
 | `cache/chunks/` | the 176 per-city-year daily aggregates built from them |
 | `cache/city_list_base.csv`, `cache/run_log.txt` | the PSGC city list used; the run log (includes the self-imposed API pause) |
+| `SOURCES_AND_LICENSES.md` | every data source with its link, licence and required attribution (the source note of the dataset package) |
+| `processed/ncr_model_ready_data_dictionary.csv` | column dictionary of the model-ready file (the 26 original columns plus the 46 added by `ncr_preprocessing.py`) |
+
+**Dataset package for the submission:** `python make_dataset_package.py` writes `out/dataset_package/` in the course layout
+(`data/original/`, `data/processed/`, with a plain-CSV copy of the processed file, the dictionaries, this source note, the
+processing notes and SHA-256 checksums). Add `--with-raw` to include the 176 raw API responses.
 
 The generated files in `output/` are untouched artifacts of the run (for example, `dataset_documentation.md` records the API
 budget caps that were in force then). SHA-256 of the CSV:
