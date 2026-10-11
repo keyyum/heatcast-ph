@@ -612,9 +612,11 @@ def write_outputs(prep: Prepared, out_dir: Path) -> list[Path]:
     frame = pd.concat([prep.train.assign(Split="train"), prep.test.assign(Split="test")], ignore_index=True)
     frame["Date"] = frame["Date"].dt.strftime("%Y-%m-%d")
     paths = [out_dir / "ncr_model_ready.csv.gz", out_dir / "split_definition.json", out_dir / "preprocessing_report.md"]
-    frame.round(4).to_csv(paths[0], index=False)          # gzip is chosen from the file name; pandas and Excel-less tools read it directly
-    paths[1].write_text(json.dumps(split_definition(prep), indent=2) + "\n", encoding="utf-8")
-    paths[2].write_text(render_report(prep), encoding="utf-8")
+    # Unix line endings on every platform: Windows text mode would write "\r\n" and the files would differ byte for byte
+    # from the committed ones. The gzip is chosen from the file name; pandas reads it directly.
+    frame.round(4).to_csv(paths[0], index=False, lineterminator="\n")
+    paths[1].write_bytes((json.dumps(split_definition(prep), indent=2) + "\n").encode("utf-8"))
+    paths[2].write_bytes(render_report(prep).encode("utf-8"))
     return paths
 
 

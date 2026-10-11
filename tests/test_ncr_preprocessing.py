@@ -11,6 +11,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import numpy as np
 import pandas as pd
@@ -305,6 +306,10 @@ class ClassHandling(unittest.TestCase):
         self.assertNotIn(1, w)                                                 # an absent class gets no weight
 
 
+def _lf(data: bytes) -> bytes:
+    return data.replace(b"\r\n", b"\n")
+
+
 def encode(labels, policy="five_class"):
     return P.encode_target(labels, policy).tolist()
 
@@ -345,13 +350,24 @@ class RealData(unittest.TestCase):
             self.skipTest("data/ncr/processed not generated yet")
         with tempfile.TemporaryDirectory() as tmp:
             P.write_outputs(self.prep, Path(tmp))
-            for name in ("split_definition.json", "preprocessing_report.md"):
-                self.assertEqual((Path(tmp) / name).read_bytes(), (committed / name).read_bytes(), name)
+            for name in ("split_definition.json", "preprocessing_report.md"):       # a Git checkout may convert LF to CRLF
+                self.assertEqual(_lf((Path(tmp) / name).read_bytes()), _lf((committed / name).read_bytes()), name)
             with gzip.open(Path(tmp) / "ncr_model_ready.csv.gz") as a, gzip.open(committed / "ncr_model_ready.csv.gz") as b:
-                self.assertEqual(a.read(), b.read())
+                self.assertEqual(_lf(a.read()), _lf(b.read()))
         info = json.loads((committed / "split_definition.json").read_text())
         self.assertEqual(info["test_start"], "2023-10-18")
         self.assertEqual(info["class_labels"], U.CLASS_ORDER)
+
+    def test_outputs_use_unix_line_endings_on_every_platform(self):
+        # Windows turns "\n" into "\r\n" in text mode, which made the files differ from the committed ones.
+        # os.linesep is patched to simulate Windows for pandas; the text files are written as bytes.
+        small = prepared()
+        with tempfile.TemporaryDirectory() as tmp, mock.patch("os.linesep", "\r\n"):
+            P.write_outputs(small, Path(tmp))
+            self.assertFalse(b"\r" in (Path(tmp) / "split_definition.json").read_bytes())      # assertFalse: no huge diff on failure
+            self.assertFalse(b"\r" in (Path(tmp) / "preprocessing_report.md").read_bytes())
+            with gzip.open(Path(tmp) / "ncr_model_ready.csv.gz") as f:
+                self.assertFalse(b"\r" in f.read())
 
     def test_report_makes_no_claim_that_a_class_was_changed(self):
         text = P.render_report(self.prep)

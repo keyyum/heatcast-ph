@@ -1,0 +1,5 @@
+# The generated data files are compared byte for byte in the tests, so keep Unix line endings on every OS
+# (Git for Windows would otherwise convert them to CRLF on checkout).
+data/ncr/**/*.csv  text eol=lf
+data/ncr/**/*.json text eol=lf
+data/ncr/**/*.md   text eol=lf
