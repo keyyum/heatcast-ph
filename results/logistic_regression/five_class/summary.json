@@ -1,0 +1,125 @@
+{
+  "model": "Logistic Regression",
+  "target_policy": "five_class",
+  "selected_config": {
+    "feature_set": "hi_lags",
+    "weather": "full",
+    "static": "none",
+    "C": 0.1,
+    "weight_power": 0.25
+  },
+  "selection_rule": "max mean CV macro F1 subject to mean CV Danger recall >= persistence",
+  "input_columns": [
+    "Temp_Min",
+    "Temp_Mean",
+    "Temp_Max",
+    "Humidity_Min",
+    "Humidity_Mean",
+    "Humidity_Max",
+    "DewPoint_Mean",
+    "Pressure_Mean",
+    "CloudCover_Mean",
+    "WindSpeed_Mean",
+    "WindSpeed_Max",
+    "WindGust_Max",
+    "Rainfall_Total",
+    "RainHours",
+    "SolarRadiation_Total",
+    "HeatIndex_Max_Today",
+    "HeatIndex_Max_Today_lag1",
+    "HeatIndex_Max_Today_lag2",
+    "HeatIndex_Max_Today_lag3",
+    "DayOfYear"
+  ],
+  "n_model_inputs_after_encoding": 21,
+  "cv": {
+    "macro_f1": {
+      "mean": 0.6135777761804447,
+      "sd": 0.08621174701139482
+    },
+    "accuracy": {
+      "mean": 0.8496963562753036,
+      "sd": 0.023575542144493224
+    },
+    "balanced_accuracy": {
+      "mean": 0.5977149659852504,
+      "sd": 0.07878428650708189
+    },
+    "macro_precision": {
+      "mean": 0.651069324819643,
+      "sd": 0.11231788629327637
+    },
+    "macro_recall": {
+      "mean": 0.5977149659852504,
+      "sd": 0.07878428650708189
+    },
+    "danger_precision": {
+      "mean": 0.644616898810464,
+      "sd": 0.09151555194579983
+    },
+    "danger_recall": {
+      "mean": 0.5945793832696036,
+      "sd": 0.07258100184002092
+    },
+    "danger_f1": {
+      "mean": 0.6177961106888186,
+      "sd": 0.07757472029359369
+    },
+    "danger_false_alarm_rate": {
+      "mean": 0.027496136255166715,
+      "sd": 0.004277276996279256
+    },
+    "qw_kappa": {
+      "mean": 0.6441269272921624,
+      "sd": 0.03319509141163669
+    },
+    "roc_auc_ovr": {
+      "mean": 0.9166995116259192,
+      "sd": 0.021771920369564227
+    }
+  },
+  "persistence_cv": {
+    "macro_f1": {
+      "mean": 0.5718109393713596,
+      "sd": 0.08354117362345707
+    },
+    "accuracy": {
+      "mean": 0.8349443319838057,
+      "sd": 0.026364496491003725
+    },
+    "balanced_accuracy": {
+      "mean": 0.5719439140593264,
+      "sd": 0.08396089308614092
+    },
+    "macro_precision": {
+      "mean": 0.5716933705435062,
+      "sd": 0.0831304684768135
+    },
+    "macro_recall": {
+      "mean": 0.5719439140593264,
+      "sd": 0.08396089308614092
+    },
+    "danger_precision": {
+      "mean": 0.581820433247462,
+      "sd": 0.07261389768082041
+    },
+    "danger_recall": {
+      "mean": 0.5814058395099704,
+      "sd": 0.07293483468327666
+    },
+    "danger_f1": {
+      "mean": 0.5816075467328086,
+      "sd": 0.0727494077839514
+    },
+    "danger_false_alarm_rate": {
+      "mean": 0.03649945502353733,
+      "sd": 0.01202464715345071
+    },
+    "qw_kappa": {
+      "mean": 0.6333481057122168,
+      "sd": 0.03392069803256956
+    }
+  },
+  "configurations_tried": 41,
+  "test_set_used": false
+}
