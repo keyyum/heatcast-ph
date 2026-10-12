@@ -1,0 +1,148 @@
+{
+  "model": "Random Forest",
+  "target_policy": "five_class",
+  "selected_config": {
+    "feature_set": "hi_lags",
+    "weather": "full",
+    "static": "none",
+    "n_estimators": 100,
+    "max_depth": 8,
+    "min_samples_leaf": 5,
+    "max_features": "sqrt",
+    "weight_power": 0.5
+  },
+  "selection_rule": "max mean CV macro F1 subject to mean CV Danger recall >= persistence (fewest trees within 0.002)",
+  "input_columns": [
+    "Temp_Min",
+    "Temp_Mean",
+    "Temp_Max",
+    "Humidity_Min",
+    "Humidity_Mean",
+    "Humidity_Max",
+    "DewPoint_Mean",
+    "Pressure_Mean",
+    "CloudCover_Mean",
+    "WindSpeed_Mean",
+    "WindSpeed_Max",
+    "WindGust_Max",
+    "Rainfall_Total",
+    "RainHours",
+    "SolarRadiation_Total",
+    "HeatIndex_Max_Today",
+    "HeatIndex_Max_Today_lag1",
+    "HeatIndex_Max_Today_lag2",
+    "HeatIndex_Max_Today_lag3",
+    "DayOfYear"
+  ],
+  "n_model_inputs_after_encoding": 21,
+  "cv": {
+    "macro_f1": {
+      "mean": 0.599085559593546,
+      "sd": 0.08374783404329943
+    },
+    "accuracy": {
+      "mean": 0.8488360323886639,
+      "sd": 0.02470483257836428
+    },
+    "balanced_accuracy": {
+      "mean": 0.5919184171839875,
+      "sd": 0.08676631822015254
+    },
+    "macro_precision": {
+      "mean": 0.6359582468216125,
+      "sd": 0.12199051135211655
+    },
+    "macro_recall": {
+      "mean": 0.5919184171839875,
+      "sd": 0.08676631822015254
+    },
+    "danger_precision": {
+      "mean": 0.5987106426865604,
+      "sd": 0.06934488230079408
+    },
+    "danger_recall": {
+      "mean": 0.6194755931401058,
+      "sd": 0.054378510772436175
+    },
+    "danger_f1": {
+      "mean": 0.607983193398207,
+      "sd": 0.056700042272684645
+    },
+    "danger_false_alarm_rate": {
+      "mean": 0.03533191440821348,
+      "sd": 0.005614387434583436
+    },
+    "qw_kappa": {
+      "mean": 0.6550022046706985,
+      "sd": 0.025993417079511954
+    },
+    "roc_auc_ovr": {
+      "mean": 0.9131740326148892,
+      "sd": 0.029296895356386094
+    }
+  },
+  "persistence_cv": {
+    "macro_f1": {
+      "mean": 0.5718109393713596,
+      "sd": 0.08354117362345707
+    },
+    "accuracy": {
+      "mean": 0.8349443319838057,
+      "sd": 0.026364496491003725
+    },
+    "balanced_accuracy": {
+      "mean": 0.5719439140593264,
+      "sd": 0.08396089308614092
+    },
+    "macro_precision": {
+      "mean": 0.5716933705435062,
+      "sd": 0.0831304684768135
+    },
+    "macro_recall": {
+      "mean": 0.5719439140593264,
+      "sd": 0.08396089308614092
+    },
+    "danger_precision": {
+      "mean": 0.581820433247462,
+      "sd": 0.07261389768082041
+    },
+    "danger_recall": {
+      "mean": 0.5814058395099704,
+      "sd": 0.07293483468327666
+    },
+    "danger_f1": {
+      "mean": 0.5816075467328086,
+      "sd": 0.0727494077839514
+    },
+    "danger_false_alarm_rate": {
+      "mean": 0.03649945502353733,
+      "sd": 0.01202464715345071
+    },
+    "qw_kappa": {
+      "mean": 0.6333481057122168,
+      "sd": 0.03392069803256956
+    }
+  },
+  "top_impurity_importance": {
+    "HeatIndex_Max_Today": 0.2214900376058822,
+    "Temp_Mean": 0.11901561977238113,
+    "HeatIndex_Max_Today_lag1": 0.08863997907629578,
+    "DewPoint_Mean": 0.08172472230001362,
+    "Temp_Max": 0.06878222976051784,
+    "HeatIndex_Max_Today_lag2": 0.05796414593118185,
+    "Temp_Min": 0.05733049057800155,
+    "HeatIndex_Max_Today_lag3": 0.05074119105112025
+  },
+  "top_permutation_importance": {
+    "HeatIndex_Max_Today": 0.09754506164642504,
+    "Temp_Mean": 0.03098293611235452,
+    "DewPoint_Mean": 0.025325823679743543,
+    "DayOfYear": 0.021996874987060024,
+    "Temp_Max": 0.004698992664148705,
+    "HeatIndex_Max_Today_lag1": 0.003686123041178635,
+    "SolarRadiation_Total": 0.0036847810693224846,
+    "Temp_Min": 0.003287999680766429
+  },
+  "configurations_tried": 36,
+  "test_set_used": false
+}
